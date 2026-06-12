@@ -286,6 +286,64 @@ figure.fig-cmp figcaption {
   }
 }
 
+/* TODO box  */
+
+.todo {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin: 1.5rem 0;
+  padding: 0.875rem 1rem;
+  border-radius: 8px;
+  border: 1px solid rgba(196, 92, 26, 0.25);
+  background: rgba(196, 92, 26, 0.06);
+}
+
+.todo-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-tag-bg);
+  flex-shrink: 0;
+}
+
+.todo-text {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+  margin: 0;
+  line-height: 1.6;
+}
+
+/* idea box */
+
+.idea {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin: 1.5rem 0;
+  padding: 0.875rem 1rem;
+  border-radius: 8px;
+  border: 1px solid rgba(42, 110, 95, 0.25);
+  background: rgba(42, 110, 95, 0.06);
+}
+
+.idea-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #2a6e5f;
+  flex-shrink: 0;
+}
+
+.idea-text {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+  margin: 0;
+  line-height: 1.6;
+}
+
 /* Copy button */
 
 .copy-btn {
