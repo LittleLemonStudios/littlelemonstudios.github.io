@@ -28,11 +28,11 @@ World (Node2D)
     └── fonts, HUD, menus...
 ```
 
-To ensure nothing is blurred in the scaling, the texture filter of the subviewport but be set to nearest neighbour.
+To ensure nothing is blurred in the scaling, the texture filter of the subviewport must be set to nearest neighbour.
 
 ## Faking Pixel Perfect Alignment
 
-Run like this, there's a visual issue. Although the pixels are now bigger, the player's location in space is a float and when moving through the world, the character and other moving objects and freely move across pixels, stopping mis pixel, breaking the illusion that you're playing a game from 30 years ago on outdated hardware. Luckily, there's a simple fix for this. There's a value: `snap_2d_transforms_to_pixel`, which we can set to `true` in code (or by clicking a button in the inspector) which allows the player to move on subpixels, with float values for coordinates, but at render time everything is snapped to the grid allowing movement to feel smooth while looking discrete.
+Run like this, there's a visual issue. Although the pixels are now bigger, the player's location in space is a float and when moving through the world, the character and other moving objects can move freely across pixels, stopping mid-pixel, breaking the illusion that you're playing a game from 30 years ago on outdated hardware. Luckily, there's a simple fix for this. There's a value: `snap_2d_transforms_to_pixel`, which we can set to `true` in code (or by clicking a button in the inspector) which allows the player to move on subpixels, with float values for coordinates, but at render time everything is snapped to the grid allowing movement to feel smooth while looking discrete.
 
 This set-up got us most of the way there and is how we have been developing the game over the past few months.
 
@@ -40,7 +40,7 @@ This set-up got us most of the way there and is how we have been developing the 
 
 This is, we think, where we found our first bug, which is being tracked in the following [GitHub Issue](https://github.com/godotengine/godot/issues/120029).
 
-The problem arises when we attach a `GPUParticle2D` node to the player and emit particles as the player moves through the game. I don'y fully appreciate the bug (otherwise I would have made a PR fixing it) but the rough issue is that the particles are moving correctly in world space, but their screen positions get snapped to the pixel grid independently of their parent each frame. As a result, particles can drift by a pixel whenever the player has a sub-pixel component causing the particle to jitter in place while the player moved.
+The problem arises when we attach a `GPUParticle2D` node to the player and emit particles as the player moves through the game. I don't fully appreciate the bug (otherwise I would have made a PR fixing it) but the rough issue is that the particles are moving correctly in world space, but their screen positions get snapped to the pixel grid independently of their parent each frame. As a result, particles can drift by a pixel whenever the player has a sub-pixel component causing the particle to jitter in place while the player moved.
 
 A simple fix is to take `snap_2d_transforms_to_pixel` and set it to `false`. This removes the jittering, but reintroduces the visual bug of walking on subpixels. 
 
