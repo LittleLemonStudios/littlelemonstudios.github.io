@@ -16,8 +16,8 @@
 }
 
 .site-title {
-  font-weight: 600;
-  font-size: 1.5rem;
+  font-weight: 700;
+  font-size: 1.2rem;
   text-decoration: none;
   color: var(--color-header);
 }
@@ -28,7 +28,7 @@
 }
 
 .site-nav a {
-  font-size: 0.875rem;
+  font-size: 0.975rem;
   text-decoration: none;
   color: var(--color-text-muted);
 }

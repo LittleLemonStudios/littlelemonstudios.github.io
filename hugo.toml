@@ -2,6 +2,9 @@ baseURL = 'https://diaryofthemossking.github.io/'
 locale = 'en-us'
 title = 'Diary of the Moss King'
 
+[taxonomies]
+  tag = "tags"
+
 [markup]
   [markup.highlight]
     style = "dracula"

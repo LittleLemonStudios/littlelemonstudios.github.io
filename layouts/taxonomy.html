@@ -1,0 +1,14 @@
+{{ define "main" }}
+<a href="{{ "/" | relURL }}" class="back-link">← Home</a>
+
+<h1>{{ .Title }}</h1>
+
+<ul class="post-list">
+  {{ range .Pages }}
+  <li class="post-item">
+    <a href="{{ .Permalink }}" class="post-item-title">{{ .Title }}</a>
+    {{ partial "tags.html" . }}
+  </li>
+  {{ end }}
+</ul>
+{{ end }}

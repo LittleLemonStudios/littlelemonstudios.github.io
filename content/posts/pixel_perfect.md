@@ -1,6 +1,8 @@
 +++
 title = "Perfecting 36 Year Old Rendering in a Modern Engine"
 date = 2025-03-12
+tags = ["godot", "rendering"]
+description = "Working with Godot to have pixel perfect art with the option of HD textures"
 draft = false
 +++
 
@@ -12,7 +14,7 @@ For Moss King, the team has decided to hold onto this nostalgic look for the gam
 
 There's a lot within Godot which makes this easy, and while we've had some hiccups along the way, progress is good. We may not be using the best solution, but this is what we're working with. As we've had to make some workarounds along the way, we thought we'd write a small blog about the design choices we've made so far.
 
-## The Basic Set Up
+## The Basic Set Up
 
 The main idea is working with two separate rendering layers. The game world renders inside a `SubViewport` at 480 x 270, which scales exactly 4 times to 1080p. The UI lives in a `CanvasLayer` on top that renders at native resolution and is never scaled.
 

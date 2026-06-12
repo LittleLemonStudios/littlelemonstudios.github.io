@@ -1,13 +1,25 @@
 {{ define "main" }}
-  {{ .Content }}
 
-  <h2>Posts</h2>
+  {{ with .Content }}
+  <div class="home-intro">
+    {{ . }}
+  </div>
+  {{ end }}
 
+  <h2 class="post-list-header">Blog Posts</h2>
 
+  <ul>
   {{ range where site.RegularPages "Type" "ne" "page" }}
     <section>
-      <h2><a href="{{ .RelPermalink }}">{{ .LinkTitle }}</a></h2>
-      {{ .Summary }}
+      <li class="post-item">
+      <a href="{{ .Permalink }}" class="post-item-title">{{ .Title }}</a>
+      <time class="post-date">{{ .Date.Format "2 January 2006" }}</time>
+      {{ with .Params.description }}
+      <p class="post-description">{{ . }}</p>
+      {{ end }}
+      {{ partial "tags.html" . }}
+      </li>
     </section>
   {{ end }}
+  </ul>
 {{ end }}
