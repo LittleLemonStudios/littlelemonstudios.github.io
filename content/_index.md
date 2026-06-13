@@ -1,5 +1,5 @@
 +++
-title = "Diary of the Moss King"
+title = "Little Lemon Studios"
 +++
 
 A devlog following the development of our game, Moss King

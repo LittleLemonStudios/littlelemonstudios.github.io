@@ -1,4 +1,4 @@
-# Diary of the Moss King — Blog
+# Little Lemon Studios
 
 A dev blog for the game, built with [Hugo](https://gohugo.io).
 
