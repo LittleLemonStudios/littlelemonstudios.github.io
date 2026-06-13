@@ -1,6 +1,6 @@
-baseURL = 'https://diaryofthemossking.github.io/'
+baseURL = 'https://littlelemonstudios.github.io/'
 locale = 'en-us'
-title = 'Diary of the Moss King'
+title = 'Little Lemon Studios'
 
 [taxonomies]
   tag = "tags"
