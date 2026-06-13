@@ -1,6 +1,6 @@
 +++
 title = "Perfecting 36 Year Old Rendering in a Modern Engine"
-date = 2025-03-12
+date = 2026-06-10
 tags = ["godot", "rendering"]
 description = "Working with Godot to have pixel perfect art with the option of HD textures"
 draft = false
