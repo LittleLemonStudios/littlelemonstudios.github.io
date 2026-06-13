@@ -84,9 +84,9 @@ func _physics_process(_delta: float) -> void:
     get_viewport().canvas_transform = main_vp.canvas_transform
 ```
 
-{{< idea title="Comment" text="If we had multiple shadows, then it would be better to move the viewport logic out onto the SubViewport itself, which we might do if we need multiple shadows. The current fix was the minimal change needed to get the particles on the player to behave nicely." >}}
+{{< idea title="Comment" text="If (when?) there were multiple nodes moving and emitting particles, then this system would need to be generalised. The player would create a `Shadow` node at `_ready()` which would get added to the shadow subviewport. Then, it would be better to move the viewport movement logic out of the `Shadow` into the `ShadowSubViewport` itself. The current fix was the minimal change needed to get the particles on the player to behave nicely, but I expect it to change over time." >}}
 
-With the `Shadow` moving with the player, we now want to remove all particles from the `Player` and move them to the `Shadow`. We can pass them by reference at runtime which allows all the particle code (e.g. setting particles to emit) within the `player.gd` script providing we move everything out in the following way:
+Now with the `Shadow` moving with the player, we now want to remove all particles from the `Player` and move them to the `Shadow` where they can't jitter. We can pass them by reference at runtime which allows all the particle code (e.g. setting particles to emit) within the `player.gd` script providing we move everything out in the following way:
 
 
 ```gdscript
