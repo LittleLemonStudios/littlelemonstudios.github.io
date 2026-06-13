@@ -56,7 +56,30 @@ We then add to the new one way platform an area which is larger than the platfor
 When `player` is not `null`, then the `Area2D` controls the collision of the `SegmentLine2D` within the physics process. When the player's location is below the platform, the collision of the `SegmentLine2D` is disabled, and when the player is above the line it's enabled. This means when the player tries to collide with the side of the line, the `Area2D` catches this, turns off collision and the player passes straight through. Then, if the player jumps on it regularly, the position ensures the collision is enabled and the platform works.
 
 ```gdscript
-TODO code snippet of enabling / disabling the collision
+class_name GenericOneWay
+extends StaticBody2D
+
+var player: Player
+@onready var collision_shape_2d: CollisionShape2D = $CollisionShape2D
+
+
+func _on_player_monitor_body_entered(body: Node2D) -> void:
+    player = body
+
+
+func _on_player_monitor_body_exited(_body: Node2D) -> void:
+    player = null
+
+
+func _physics_process(_delta: float) -> void:
+    if player == null:
+        return
+    
+    # Compute the y-difference between the platform and player's feet
+    var diff = player.global_position.y - global_position.y
+    
+    # The platform only has collision when we're on or above the platform
+    collision_shape_2d.disabled = diff > 0.0
 ```
 
 Ultimately, this is similar to replacing the player's collision shape with a `SegmentLine2D` too, but without sacrificing that we can "bump" into walls with our rectangle as you would expect for a solid player character. 
@@ -68,8 +91,22 @@ Ultimately, this is similar to replacing the player's collision shape with a `Se
 One of the next things to sort is allowing the `TileMapLayer` one way collisions to work in the same way. Here we can't do the same tricks, but what we can do is add these generic one way collisions to every one way tile at `_ready()`.
 
 ```gdscript
-TODO code snippet of adding the tiles
+func _add_custom_one_way_collision():
+    var level = get_parent()
+
+    for cell_coordinate in get_used_cells():
+	    # Only place nodes on "one_way" tiles
+        if not get_cell_tile_data(cell_coordinate).get_custom_data("one_way"):
+            continue
+
+		# Place a `ONE_WAY_GENERIC` on each tile
+		var one_way_collision = ONE_WAY_GENERIC.instantiate()
+		var local_position = map_to_local(cell_coordinate)
+		one_way_collision.position = local_position - Vector2(4, 4)
+		level.add_child.call_deferred(one_way_collision)
 ```
+
+Here we check for one way platforms with the custom data, but another way would be to collect the cell's atlas coordinate and have a `const` with the `ONE_WAY_TILES` which you check against in the loop instead.
 
 As a result, we can paint our scene with one way tiles from the tilemap and instead of coding the one way collision into the tilemap, this is all handled by the generic static body and the tilemap just handles the visuals!
 
@@ -86,7 +123,20 @@ For now, the only additional thing we have included is a leniency mechanic for w
 Before we check the player's position for the collision, we also check how close the player is to the top. If the player is going to miss it by a small number of pixels (say the player is moving down and is two pixels from the top) then we can move the player up by some margin, snapping them to the platform.
 
 ```gdscript
-TODO: code from the platform snapping
+func _physics_process(_delta: float) -> void:
+    if player == null:
+        return
+    
+    # Compute the y-difference between the platform and player's feet
+    var diff = player.global_position.y - global_position.y
+    
+    # If the player is falling and just below the top, push them up
+    # to land on the platform 
+    if collision_shape_2d.disabled and player.velocity.y >= 0 and diff < 2.0:
+        player.global_position.y = global_position.y - 0.5
+    
+    # The platform only has collision when we're on or above the platform
+    collision_shape_2d.disabled = diff > 0.0
 ```
 
 {{< todo text="Gif of the snapping" >}}
