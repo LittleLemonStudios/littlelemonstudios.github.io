@@ -6,11 +6,13 @@ description = "Working with Godot to have pixel perfect art with the option of H
 draft = false
 +++
 
-Inspired by the games of our childhoods, Moss King is a tricky platforming game with beautiful pixel art created by our artist **Spooooky**. But unlike Super Mario World, the game itself is being built and rendered by Godot, an open source game engine which was designed to handle the complex graphics of modern games.
+{{< todo text="Picture for the top of the blog." >}}
 
-I (Jack) started to learn game design in Godot about a year ago when I had a month long "personal game jam" and made the small platforming game [Blink](https://supersingular.itch.io/blink), which achieved pixel perfect graphics in a simple way: the whole game was built at low resolution and then up-scaled to the window size. This had a lot of benefits, namely being easy to implement which was a big deal as I started off knowing nothing about Godot. The downside was that I was stuck at the same resolution for everything in the game, which meant pixel fonts and UI.
+Inspired by the games of our childhoods, Moss King is a tricky platforming game with beautiful pixel art created by our artist **Spooooky**. But unlike Super Mario World, the game itself is being built and rendered by Godot, an open source game engine which was designed to handle the complex graphics of modern games, and so getting the retro look out the box requires a little work.
 
-For Moss King, the team has decided to hold onto this nostalgic look for the game, but we want to try and do the extra work at the rendering level so that we can use HD textures for things such as UI elements and fonts. This is "common" with modern pixel art games like Celeste, where you can make UI comfy to interact with while allowing the main game to look and feel like the games we remember from being kids.
+I started to learn game design in Godot about a year ago during a month long "personal game jam" which resulted in the small platforming game [Blink](https://supersingular.itch.io/blink), which achieved pixel perfect graphics in a simple way: the whole game was built at low resolution and then up-scaled to the window size. This had a lot of benefits, namely being easy to implement which was a big deal as I started off knowing nothing about Godot. The downside was that I was stuck at the same resolution for everything in the game, which meant pixel fonts and UI.
+
+For Moss King, the team has decided to hold onto this nostalgic look for the game, but we want to try and do the extra work at the rendering level so that we can use HD textures for things such as UI elements and fonts. This is "common" with modern pixel art games, like Celeste, where you can make UI comfy to interact with while allowing the main game to look and feel like the games we remember from being kids.
 
 There's a lot within Godot which makes this easy, and while we've had some hiccups along the way, progress is good. We may not be using the best solution, but this is what we're working with. As we've had to make some workarounds along the way, we thought we'd write a small blog about the design choices we've made so far.
 
@@ -32,21 +34,31 @@ World (Node2D)
 
 To ensure nothing is blurred in the scaling, the texture filter of the subviewport must be set to nearest neighbour.
 
+{{< todo text="Comparison between up-scaling between default and nearest neighbour." >}}
+
 ## Faking Pixel Perfect Alignment
 
-Run like this, there's a visual issue. Although the pixels are now bigger, the player's location in space is a float and when moving through the world, the character and other moving objects can move freely across pixels, stopping mid-pixel, breaking the illusion that you're playing a game from 30 years ago on outdated hardware. Luckily, there's a simple fix for this. There's a value: `snap_2d_transforms_to_pixel`, which we can set to `true` in code (or by clicking a button in the inspector) which allows the player to move on subpixels, with float values for coordinates, but at render time everything is snapped to the grid allowing movement to feel smooth while looking discrete.
+Run like this, there's a visual issue. Although the pixels are now bigger and crisp, the player's location in space is a float value which isn't locked visually to these large scaled pixels. As a result, when moving through the world, the character or any other moving object, can move freely across pixels boundaries, stopping mid-pixel and breaking the illusion that you're playing a game from 30 years ago on outdated hardware. 
+
+Luckily, there's a simple fix for this. There's a value: `snap_2d_transforms_to_pixel`, which we can set to `true` in code (or by clicking a checkbox in the inspector) which fixes this at the rendering level. This allows the player to still exist at subpixels locations, but at render time everything is snapped to the grid allowing movement to feel smooth while looking discrete.
 
 This set-up got us most of the way there and is how we have been developing the game over the past few months.
 
+{{< todo text="Comparison between snap being on an off, with Pomu between pixels." >}}
+
 ## Jittering GPU Particles
 
-This is, we think, where we found our first bug, which is being tracked in the following [GitHub Issue](https://github.com/godotengine/godot/issues/120029).
+This is, we think, where we found our first Godot bug, which is being tracked in the following [GitHub Issue](https://github.com/godotengine/godot/issues/120029).
 
-The problem arises when we attach a `GPUParticle2D` node to the player and emit particles as the player moves through the game. I don't fully appreciate the bug (otherwise I would have made a PR fixing it) but the rough issue is that the particles are moving correctly in world space, but their screen positions get snapped to the pixel grid independently of their parent each frame. As a result, particles can drift by a pixel whenever the player has a sub-pixel component causing the particle to jitter in place while the player moved.
+The problem arises when we attach a `GPUParticle2D` node to the player and emit particles as the player moves through the game. These particles are really useful for adding a little flair or "juice" to movements, from simple dust animations when you land to complex particles we emit when you successfully complete some complex jump. 
+
+I don't fully appreciate the bug (otherwise I would have made a PR fixing it) but the rough issue seems to come down to async behaviour between how GPU particles move and how the CPU applies the pixel snapping. We find that the particles are moving correctly providing the parent stands still, but as soon as the player (or other moving node) changes position, the particle's screen positions get snapped to the pixel grid independently of their parent each frame. As a result, particles seem to jitter out of and into pixel alignment every frame causing this jitter effect:
+
+{{< todo text="Show bad jittering." >}}
 
 A simple fix is to take `snap_2d_transforms_to_pixel` and set it to `false`. This removes the jittering, but reintroduces the visual bug of walking on subpixels. 
 
-Our fix to get the best of both worlds is to introduce a second subviewport for the particles to live in while keeping everything else in the snapped viewport. The workflow is roughly:
+Our fix was to try and capture the best of both worlds by introducing a second `SubViewport` for the particles to live in while keeping everything else in the snapped game `SubViewport`. The workflow is roughly:
 
 ```asm
 WorldCanvas (CanvasLayer)
