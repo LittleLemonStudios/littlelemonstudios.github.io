@@ -194,7 +194,6 @@ article p {
 }
 
 /* Custom figures */
-
 figure.fig {
   margin: 2rem auto;
   text-align: center;
@@ -238,7 +237,7 @@ figure.fig-cmp {
 
 .fig-cmp-divider {
   width: 2px;
-  background: --var(color-bg);
+  background: var(--color-bg);
   flex-shrink: 0;
 }
 
@@ -247,6 +246,42 @@ figure.fig-cmp figcaption {
   font-size: 0.825rem;
   color: var(--color-text-muted);
   font-style: italic;
+}
+
+figure.pixel-art {
+  display: block;
+  margin: 2rem auto;
+  text-align: center;
+}
+
+figure.pixel-art img {
+  display: block;
+  margin: 0 auto;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  
+  -ms-interpolation-mode: nearest-neighbor;
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
+  
+  max-width: 100%; 
+  height: auto;
+}
+
+figure.pixel-art img.scale-one {
+  width: var(--w, auto);
+}
+
+figure.pixel-art img.scale-two {
+  width: calc(2 * var(--w)); 
+}
+
+figure.pixel-art img.scale-three {
+  width: calc(3 * var(--w)); 
+}
+
+figure.pixel-art img.scale-four {
+  width: calc(4 * var(--w)); 
 }
 
 @media (max-width: 600px) {
