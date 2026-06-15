@@ -1,14 +1,14 @@
 <figure class="fig-cmp">
   <div class="fig-cmp-images">
     <div class="fig-cmp-side">
-      <img src="{{ .Get "src1" }}" alt="{{ .Get "alt1" }}">
+      <img src="{{ (resources.Get " src1").RelPermalink }}" alt="{{ .Get " alt1" }}">
       {{ if not (.Get "hideLabels") }}
       <span class="fig-cmp-label">{{ .Get "label1" | default "Before" }}</span>
       {{ end }}
     </div>
     <div class="fig-cmp-divider"></div>
     <div class="fig-cmp-side">
-      <img src="{{ .Get "src2" }}" alt="{{ .Get "alt2" }}">
+      <img src="{{ (resources.Get " src2").RelPermalink }}" alt="{{ .Get " alt2" }}">
       {{ if not (.Get "hideLabels") }}
       <span class="fig-cmp-label">{{ .Get "label1" | default "After" }}</span>
       {{ end }}

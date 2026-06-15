@@ -6,7 +6,7 @@ description = "Finding a (over engineered?) solution to one-way platform edge co
 draft = false
 +++
 
-{{< todo text="Picture of Pomu looking up at a one way platform." >}}
+{{< pixel_art src="/png/looking_up.png" caption="What's this then "scale="three" >}}
 
 If you decide to make a platforming game with your friends, at some point along the way you are going to need to make some platforms. You'll probably start with some ground, then gaps in the ground to jump over and some spikes to avoid, but pretty soon you'll need a "one way" platform which you pass through from below and land on from above.
 

@@ -3,17 +3,9 @@ locale = 'en-us'
 title = 'Little Lemon Studios'
 
 [taxonomies]
-  tag = "tags"
+tag = "tags"
 
 [markup]
-  [markup.highlight]
-    style = "dracula"
-    noClasses = false
-  [markup.goldmark]
-    [markup.goldmark.rendered]
-      tabWidth = 4
-
-[caches]
-  [caches.images]
-    dir = ':cacheDir/images'
-
+[markup.highlight]
+style = "dracula"
+noClasses = false

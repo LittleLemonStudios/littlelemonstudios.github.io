@@ -3,24 +3,32 @@
 
 
 :root {
-  --color-bg:         #f0ede6;
-  --color-text:       #2a2118; 
-  --color-header:     #467061; 
-  --color-link:       #5a919c; 
+  --color-bg: #f0ede6;
+  --color-text: #2a2118;
+  --color-header: #467061;
+  --color-link: #5a919c;
   --color-text-muted: #8a8478;
   --tag-color: #ee5d64;
 
 }
+
 /* Fonts */
 
 
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   color: var(--color-header);
 }
 
@@ -38,7 +46,7 @@ a {
 }
 
 header {
-  padding:  20px;
+  padding: 20px;
 }
 
 .topTitle {
@@ -76,7 +84,7 @@ article strong {
 /* main page */
 
 .home-intro {
-  margin-bottom: 3rem;        
+  margin-bottom: 3rem;
   padding-bottom: 2rem;
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
   color: var(--color-text-muted);
@@ -99,7 +107,7 @@ article strong {
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 2.5rem;                
+  gap: 2.5rem;
 }
 
 .post-list-header {
@@ -111,7 +119,7 @@ article strong {
 .post-item {
   display: flex;
   flex-direction: column;
-  gap: 0;                    
+  gap: 0;
 }
 
 .post-item-title {
@@ -119,21 +127,21 @@ article strong {
   font-weight: 500;
   text-decoration: none;
   color: var(--color-header);
-  margin-bottom: 0.3rem;      
+  margin-bottom: 0.3rem;
 }
 
 .post-date {
   display: block;
   font-size: 0.8125rem;
   color: var(--color-text-muted);
-  margin-bottom: 0.5rem;     
+  margin-bottom: 0.5rem;
 }
 
 .post-description {
   font-size: 0.875rem;
   color: var(--color-text-muted);
   line-height: 1.6;
-  margin-bottom: 0.6rem;     
+  margin-bottom: 0.6rem;
 }
 
 /* Headings inside article */
@@ -210,7 +218,7 @@ figure.fig img {
 figure.fig figcaption {
   margin-top: 0.6rem;
   font-size: 0.825rem;
-  color: var(--color-text-muted); 
+  color: var(--color-text-muted);
   font-style: italic;
 }
 
@@ -259,12 +267,12 @@ figure.pixel-art img {
   margin: 0 auto;
   border-radius: 8px;
   border: 1px solid rgba(0, 0, 0, 0.1);
-  
+
   -ms-interpolation-mode: nearest-neighbor;
   image-rendering: crisp-edges;
   image-rendering: pixelated;
-  
-  max-width: 100%; 
+
+  max-width: 100%;
   height: auto;
 }
 
@@ -273,15 +281,41 @@ figure.pixel-art img.scale-one {
 }
 
 figure.pixel-art img.scale-two {
-  width: calc(2 * var(--w)); 
+  width: calc(2 * var(--w));
 }
 
 figure.pixel-art img.scale-three {
-  width: calc(3 * var(--w)); 
+  width: calc(3 * var(--w));
 }
 
 figure.pixel-art img.scale-four {
-  width: calc(4 * var(--w)); 
+  width: calc(4 * var(--w));
+}
+
+figure.fig-cmp.pixel-art .fig-cmp-images {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  width: fit-content;
+  margin: 0 auto;
+}
+
+figure.fig-cmp.pixel-art .fig-cmp-side {
+  position: relative;
+  display: flex;
+  width: auto;
+  /* override the 50% from fig-cmp, let the image dictate size */
+}
+
+figure.fig-cmp.pixel-art .fig-cmp-side img {
+  border-radius: 0;
+  /* border is on the wrapper, not individual images */
+  border: none;
 }
 
 @media (max-width: 600px) {
@@ -445,13 +479,13 @@ figure.pixel-art img.scale-four {
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 2.5rem;              
+  gap: 2.5rem;
 }
 
 .post-item {
   display: flex;
   flex-direction: column;
-  gap: 0;                  
+  gap: 0;
 }
 
 .post-item-title {
@@ -459,21 +493,21 @@ figure.pixel-art img.scale-four {
   font-weight: 500;
   text-decoration: none;
   color: var(--color-header);
-  margin-bottom: 0.3rem;     
+  margin-bottom: 0.3rem;
 }
 
 .post-date {
   display: block;
   font-size: 0.8125rem;
   color: var(--color-text-muted);
-  margin-bottom: 0.5rem;     
+  margin-bottom: 0.5rem;
 }
 
 .post-description {
   font-size: 0.875rem;
   color: var(--color-text-muted);
   line-height: 1.6;
-  margin-bottom: 0.6rem;     
+  margin-bottom: 0.6rem;
 }
 
 .post-item-title:hover {
@@ -482,7 +516,8 @@ figure.pixel-art img.scale-four {
 
 /* Code syntax highlighting */
 
-code, pre {
+code,
+pre {
   font-family: "Google Sans Code", monospace;
   font-optical-sizing: auto;
   font-variation-settings:
@@ -526,7 +561,9 @@ code {
 }
 
 @media (max-width: 800px) {
-  ol, ul {
+
+  ol,
+  ul {
     margin-left: 20px;
   }
 }

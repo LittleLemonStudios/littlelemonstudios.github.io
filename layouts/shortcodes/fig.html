@@ -1,4 +1,4 @@
 <figure class="fig">
-  <img src="{{ .Get "src" }}" alt="{{ .Get "alt" }}">
+  <img src="{{ (resources.Get " src").RelPermalink }}" alt="{{ .Get " alt" }}">
   <figcaption>{{ .Get "caption" }}</figcaption>
 </figure>

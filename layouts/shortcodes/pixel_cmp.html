@@ -1,0 +1,36 @@
+{{- $src1 := .Get "src1" -}}
+{{- $img1 := .Page.Resources.GetMatch $src1 -}}
+{{- if not $img1 -}}
+{{- $img1 = resources.Get $src1 -}}
+{{- end -}}
+
+{{- $src2 := .Get "src2" -}}
+{{- $img2 := .Page.Resources.GetMatch $src2 -}}
+{{- if not $img2 -}}
+{{- $img2 = resources.Get $src2 -}}
+{{- end -}}
+
+<figure class="fig-cmp pixel-art">
+    <div class="fig-cmp-images">
+        <div class="fig-cmp-side">
+            <img class='scale-{{ .Get "scale" | default "one" }}'
+                src="{{ with $img1 }}{{ .RelPermalink }}{{ else }}{{ $src1 }}{{ end }}" alt="{{ .Get " alt1" }}" {{ with
+                $img1 }} style="--w: {{ .Width }}px;" {{ end }}>
+            {{ if not (.Get "hideLabels") }}
+            <span class="fig-cmp-label">{{ .Get "label1" | default "Before" }}</span>
+            {{ end }}
+        </div>
+        <div class="fig-cmp-divider"></div>
+        <div class="fig-cmp-side">
+            <img class='scale-{{ .Get "scale" | default "one" }}'
+                src="{{ with $img2 }}{{ .RelPermalink }}{{ else }}{{ $src2 }}{{ end }}" alt="{{ .Get " alt2" }}" {{ with
+                $img2 }} style="--w: {{ .Width }}px;" {{ end }}>
+            {{ if not (.Get "hideLabels") }}
+            <span class="fig-cmp-label">{{ .Get "label2" | default "After" }}</span>
+            {{ end }}
+        </div>
+    </div>
+    {{ with .Get "caption" }}
+    <figcaption>{{ . }}</figcaption>
+    {{ end }}
+</figure>

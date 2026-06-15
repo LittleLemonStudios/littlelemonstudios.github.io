@@ -1,20 +1,14 @@
 {{- $src := .Get "src" -}}
-{{- $img := "" -}}
-
-{{- if .Page.Resources.GetMatch $src -}}
-  {{- $img = .Page.Resources.GetMatch $src -}}
-{{- else -}}
-  {{- $img = resources.Get $src -}}
+{{- $img := .Page.Resources.GetMatch $src -}}
+{{- if not $img -}}
+{{- $img = resources.Get $src -}}
 {{- end -}}
 
 <figure class='fig pixel-art'>
-  <img 
-    class='scale-{{ .Get "scale" | default "one" }}' 
-    src='{{ $src }}' 
-    alt='{{ .Get "alt" }}'
-    {{ with $img }} style='--w: {{ .Width }}px;' {{ end }}
-  >
+  <img class='scale-{{ .Get "scale" | default "one" }}'
+    src='{{ with $img }}{{ .RelPermalink }}{{ else }}{{ $src }}{{ end }}' alt='{{ .Get "alt" }}' {{ with $img
+    }}style='--w: {{ .Width }}px;' {{ end }}>
   {{ with .Get "caption" }}
-    <figcaption>{{ . }}</figcaption>
+  <figcaption>{{ . }}</figcaption>
   {{ end }}
 </figure>
