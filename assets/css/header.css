@@ -21,14 +21,6 @@
   text-decoration: none;
   color: var(--color-header);
 }
-/*
-.site-title {
-  font-weight: 900;
-  font-size: 1rem;
-  text-decoration: none;
-  color: #f5c842;
-  -webkit-text-stroke: 0.5px #1a1a1a;
-}*/
 
 .site-nav {
   display: flex;

@@ -2,7 +2,7 @@
 title = "Avoiding Edge Collision with One Way Platforms"
 date = 2026-06-13
 tags = ["godot", "platforming"]
-description = "Finding a (over engineered?) solution to one-way platform edge collision."
+description = "Finding a (over engineered?) solution to one-way platform edge collision"
 draft = false
 +++
 
@@ -112,7 +112,7 @@ As a result, we can paint our scene with one way tiles from the tilemap and inst
 
 {{< todo text="Screenshot of the platform with collision shapes enabled" >}}
 
-{{< idea title="comment" text="There's an optimisation to explore here. Currently if there are n tiles placed which are labeled as 'one way' then we created n generic one way platforms and add them all to the scene. One could imagine instead looking for lines of one way tiles and adding longer sprites (so 5 adjacent tiles need only one StaticBody2D). However, to do this you would need to dynamically set the collision shape of each one to the correct length and so you may end up with more complex scenes as instead of a single node passed many times as reference you need many different collision shapes created instead. Something to think about." >}}
+{{< comment text="There's an optimisation to explore here. Currently if there are n tiles placed which are labeled as 'one way' then we created n generic one way platforms and add them all to the scene. One could imagine instead looking for lines of one way tiles and adding longer sprites (so 5 adjacent tiles need only one StaticBody2D). However, to do this you would need to dynamically set the collision shape of each one to the correct length and so you may end up with more complex scenes as instead of a single node passed many times as reference you need many different collision shapes created instead. Something to think about." >}}
 
 ## Some Extra Leniency  
 

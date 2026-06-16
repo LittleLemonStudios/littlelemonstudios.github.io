@@ -1,19 +1,150 @@
 +++
-title = "Creating GIFs within Godot"
-date = 2026-06-10
-tags = ["godot", "rendering"]
-description = "How we engineered a solution for recording GIFs from the game for this blog"
+title = "Creating GIFs directly from Gameplay"
+date = 2026-06-09
+tags = ["godot", "dev-tools", "rendering"]
+description = "How we created a lightweight method to continuously record the game viewport to directly generate GIFs from gameplay"
 draft = false
 +++
 
-{{< pixel_cmp scale="two" src1="png/looking.png" src2="png/looking_up.png" alt1="Looking forward" alt2="Looking up" caption="Character looking forward vs looking up." >}}
+Carps and I first met by playing each other's Mario Maker 2 levels. Back then, we would create a new level and using the Switch's inbuilt video capture, record ourselves finishing our own levels. We could then show work in progress by sharing a few clips.
 
-{{< pixel_cmp scale="four" src1="gif/example.gif" src2="gif/example.gif" alt1="Looking forward" alt2="Looking up" caption="Character looking forward vs looking up." >}}
+The whole workflow was really easy, the switch would remember the last 30 seconds of gameplay, and so as long as each section broke down easily enough, you could stich the three sections of a usual level in three 30 second chunks. [Here's an example](https://www.reddit.com/r/MarioMaker/s/ZeL2yvLMFb), hosted on Reddit.
 
-{{< pixel_art scale="one" src="/gif/example.gif" caption="one times scaling">}}
+I really like this retroactive way of capturing gameplay. Sometimes when you play, something exciting happens and being able to extract the past, rather than preemptively asking the game to record before the cool thing, allows you to catch times which are surprising. This is especially true when you're making a game and sometimes a hard to replicate bug can appear. Being able to request the previous few seconds of gameplay is ideal for bug evidence.
 
-{{< pixel_art scale="two" src="/gif/example.gif" caption="two times scaling">}}
+Now, on the Switch, I imagine Nintendo have done some very clever tricks at the hardware level to parallelise the storage of the clip frames without introducing any lag into the gameplay. This blog post is our attempt to get a similar level of functionality within Godot.
 
-{{< pixel_art scale="three" src="/gif/example.gif" caption="three times scaling">}}
+## The Plan
 
-{{< pixel_art scale="four" src="/gif/example.gif" caption="four times scaling">}}
+Before we talk about the Godot internals, let's sketch out roughly what we want to do. To create a video, or GIF, of the past we need a way to continuously store what is happening on the screen at any given point. For encoding reasons, we chose to record GIFs at 25 FPS, but technically this can be totally custom.
+
+{{< comment text="A GIF is a series of images separated by some delay. The delay is encoded in 100ths of seconds, so it's good to pick a FPS which evenly divides 100." >}}
+
+What this ultimately means is that if we want to remember the last `n` seconds of gameplay, we'll need to store `25*n` frames in memory and continuously remove the oldest frames when adding the latest frame. We need the capturing and saving of this data to be fast enough that we can reasonably perform every 40ms while the main game is running.
+
+Then, we need to handle how this is saved. We expect the player to press a button to prompt the save. At this point, all of the viewport frame data needs to be processed to turn into a video. This ultimately means encoding every frame in some image format which is then compressed into some video format (such as mp4) or a GIF.
+
+Lastly we'll need to hook in some UI which tells the player when they have started clipping, when it finishes and whether the clip succeeded or failed to be saved.
+
+Capturing frame data and creating a GIF are essentially two completely independent pieces of work, but they need to be aware of each other. In particular, we expect the creation of the GIF to be computationally heavy and so we want to ensure that the computer attempts to do as much of this work on an independent thread to the one the game is running on. This is important to remember and will limit how efficiently we can store the frame data itself.
+
+{{< comment text="Another option not explored in this post at all would be to capture game input and then play back all these inputs when the user asks to save the clip. This would have to pause gameplay but probably not introduce any lag during the gameplay before the clip." >}}
+
+## Continuously Capturing Viewport Textures
+
+### Ring Buffers
+
+Before tackling how we obtain each frame, let's discuss how we can manage the memory of the frame data itself. Our solution uses something called a ring buffer. The idea is that we store both an `Array` together with an `int` type which indexes the ring buffer. Adding a frame to the array means storing the value at the current index, then incrementing the index modulo the fixed size.
+
+A sketch of this in code would look like this:
+
+```gdscript
+# These constants can be freely chosen to balance performance
+const CAPTURE_FPS: int = 25
+const BUFFER_SECONDS: int = 5
+const BUFFER_SIZE: int = CAPTURE_FPS * BUFFER_SECONDS
+
+var buffer_index: int = 0
+var ring_buffer: Array[Image] = []
+
+func _ready() -> void:
+    # Preallocate the space to the ring buffer
+	ring_buffer.resize(BUFFER_SIZE)
+
+func _save_to_buffer(img: Image) -> void:
+    ring_buffer[buffer_index] = img
+    buffer_index = (buffer_index + 1) % BUFFER_SIZE
+```
+
+What this means is that the buffer never needs to have its size modified and streamlines how we can save and overwrite the oldest of frames without needing to explicitly remove anything.
+
+Reading the frames in order is then as easy as:
+
+```gdscript
+for i in BUFFER_SIZE:
+	var frame: Image = ring_buffer[(buffer_index + i) % BUFFER_SIZE]
+```
+
+
+### Saving the Texture Image
+
+With an efficient memory structure to hold the frame data, we now need to make a decision about exactly what data we're saving for each frame.
+
+This point is where memory considerations need to be made. Our pixel art game runs in a `480x270` viewport, but is then upscaled to a much higher resolution to allow for HD elements. There is a 16x memory cost in storing the `1920x1080` viewport texture compared to the low-res `480x270`. As a result, we decided to capture a `SubViewport` which contained only the low-res gameplay elements which means all UI and other HD elements introduced into the game are invisible to our screen capture.
+
+As explained in [Perfecting 36 Year Old Rendering in a Modern Engine](/posts/pixel_perfect), we actually have two low resolution sub viewports within the game to have particles behave as we want. As a result we can't simply call a texture directly from where the game is drawn. Instead, we make a new `SubViewportContainer` with the following structure:
+
+```asm
+RecordingSubViewportContainer (SubViewportContainer)
+├── RecordingSubViewport (SubViewport)
+│   └── GameTextureRect (TextureRect) [ViewportTexture set to the game]
+│   └── ParticleTextureRect (TextureRect) [ViewportTexture set to the particles]
+```
+
+Then, the texture we want to capture is the texture of `RecordingSubViewport` which will be a "small" `480x270` texture about 500kb in size. We can register this viewport as the target with
+
+```gdscript
+func register_viewport(viewport: SubViewport) -> void:
+	assert(viewport.size == Vector2i(480, 270))
+	target_viewport = viewport
+```
+
+by calling `ScreenRecorder.register_viewport(self)` within the script of `RecordingSubViewport`. Now, most of the time this viewport is useless, so we set the viewport rendering mode to `DISABLED` and then set it to `UPDATE_ONCE` only on the frame we want to capture.
+
+With `target_viewport` now capturing what we want, the easiest solution is to then save to the buffer the image directly: `target_viewport.get_image()`, however this introduces latency into the game as the CPU waits for the texture from the GPU which might not be ready to send this data. Later in the blog we talk about some other ideas, but this is actually what is being used currently and we find the FPS of the game drops from about 120+ to 80-110 FPS while the recording is active. 
+
+
+### Triggering Frame Capture
+
+With a ring buffer in place and a way to save each individual frame, we now need to hook up various signals to ensure that we are consistently saving frame data to allow the resulting clip to run at the chosen FPS. At 25 FPS, we need to trigger capture every 1/25 seconds or equivalently every 40 ms.
+
+The rough set up is as follows. We store a constant `TICK_LENGTH` equal to the tick length. We then set a timer variable `tick_time` at `_ready()` equal to this value. Within the `_process(delta: float)` method, we decrease `tick_time` and if this value is non-positive, we trigger the code to capture a frame and add `TICK_LENGTH` back to `tick_time`.
+
+However, we need to be careful that we only capture the frame after the GPU has finished drawing. To abstract this, we instead simply update `waiting_for_frame: bool` to be `true` within the process loop. Then by connecting `RenderingServer.frame_post_draw.connect(_on_frame_post_draw)` we can only ever attempt to save data when Godot knows everything is ready to be saved.
+
+The work flow of this section then looks roughly like:
+
+```gdscript
+const CAPTURE_FPS: int = 25
+const TICK_LENGTH: float = 1.0 / CAPTURE_FPS
+
+func _ready() -> void:
+	# Connect the signal which saves images to the buffer
+	RenderingServer.frame_post_draw.connect(_on_frame_post_draw)
+
+	# Set the tick timer
+	tick_time = TICK_LENGTH
+
+func _process(delta: float) -> void:
+	# Decrease the timer and capture when expired
+	tick_time -= delta
+	if tick_time <= 0:
+		tick_time += TICK_LENGTH
+		waiting_for_frame = true
+
+func _on_frame_post_draw() -> void:
+	"""
+	Saves the current viewport texture to the buffer
+	"""
+	if not waiting_for_frame:
+		return
+
+	if target_viewport == null:
+		waiting_for_frame = false
+		return
+
+	var img = target_viewport.get_texture().get_image()
+	ring_buffer[buffer_index] = img
+	buffer_index = (buffer_index + 1) % BUFFER_SIZE
+	waiting_for_frame = false
+```
+
+
+## A GIF of the Past
+
+{{< todo text="write this section talk about magick and ffmpeg and also the native gdscript solution">}}
+
+## Future Improvements
+
+{{< todo text="write this section talk about Forward+ and RenderingDevice and whether we can improve this any more">}}
+

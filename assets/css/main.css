@@ -3,17 +3,18 @@
 
 
 :root {
-  --color-bg: #f0ede6;
+  --color-bg: #fffdf6;
   --color-text: #2a2118;
-  --color-header: #467061;
-  --color-link: #5a919c;
+  --color-header: #197b58;
+  /* --color-link: #5a919c; */
+  --color-link: #e08a25;
   --color-text-muted: #8a8478;
   --tag-color: #ee5d64;
-
+  --inline-code-bg: #fae39a;
+  --inline-code-text: #1c1700;
+  --pomu-gold: #eec648;
+  --pomu-gold-dark: #e08a25;
 }
-
-/* Fonts */
-
 
 *,
 *::before,
@@ -181,24 +182,6 @@ article p {
 
 .muted {
   color: var(--color-text-muted);
-}
-
-/* Go back button */
-
-.backBtn {
-  text-align: right;
-}
-
-.back-link {
-  display: inline-block;
-  margin-bottom: 2rem;
-  font-size: 0.875rem;
-  color: var(--color-text-muted);
-  text-decoration: none;
-}
-
-.back-link:hover {
-  color: var(--color-link);
 }
 
 /* Custom figures */
@@ -374,8 +357,8 @@ figure.fig-cmp.pixel-art .fig-cmp-side img {
   margin: 1.5rem 0;
   padding: 0.875rem 1rem;
   border-radius: 8px;
-  border: 1px solid rgba(196, 92, 26, 0.25);
-  background: rgba(196, 92, 26, 0.06);
+  border: 1px solid rgba(224, 138, 37, 0.25);
+  background: rgba(224, 138, 37, 0.06);
 }
 
 .todo-label {
@@ -383,7 +366,7 @@ figure.fig-cmp.pixel-art .fig-cmp-side img {
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--color-tag-bg);
+  color: var(--pomu-gold-dark);
   flex-shrink: 0;
 }
 
@@ -403,8 +386,8 @@ figure.fig-cmp.pixel-art .fig-cmp-side img {
   margin: 1.5rem 0;
   padding: 0.875rem 1rem;
   border-radius: 8px;
-  border: 1px solid rgba(42, 110, 95, 0.25);
-  background: rgba(42, 110, 95, 0.06);
+  border: 1px solid rgba(25, 123, 88, 0.25);
+  background: rgba(25, 123, 88, 0.06);
 }
 
 .idea-label {
@@ -412,7 +395,7 @@ figure.fig-cmp.pixel-art .fig-cmp-side img {
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #2a6e5f;
+  color: var(--color-header);
   flex-shrink: 0;
 }
 
@@ -553,8 +536,8 @@ pre {
 }
 
 code {
-  background: #ebe3d8;
-  color: #4f380d;
+  background: var(--inline-code-bg);
+  color: var(--inline-code-text);
   padding: 0.15em 0.4em;
   border-radius: 4px;
   font-size: 0.875em;
