@@ -146,5 +146,12 @@ func _on_frame_post_draw() -> void:
 
 ## Future Improvements
 
-{{< todo text="write this section talk about Forward+ and RenderingDevice and whether we can improve this any more">}}
+I'm still not totally happy with the solution, in particular, I feel as though there must be an async way to obtain the texture data from the GPU without stalling the CPU during the frame capture. I would love to add to the buffer the texture `RID` or some other lighter data structure which I could then create an image from using the worker thread instead of the main game thread.
+
+This is something I am unexperienced with and potentially the solution is "easy" when you know what you're doing.
+
+The problem seems to be in how we could offload the request from the GPU into memory from a worker thread instead of a main thread. As far as I can tell from the documentation, `RenderingSever` can directly request texture data from the `RID` of the texture, but that this work has to be done on the main thread?
+
+Alternatively, there is the `RenderingDevice` but this requires building the game in Forward+ rather than Compatibility mode and I'm not sure we want to go down this route. The `RenderingDevice` does include an async call to the `texture_get_data_async(texture: RID, layer: int, callback: Callable)`, but this hasn't been properly explored yet.
+
 
