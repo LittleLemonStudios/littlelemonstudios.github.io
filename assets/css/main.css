@@ -292,13 +292,48 @@ figure.fig-cmp.pixel-art .fig-cmp-side {
   position: relative;
   display: flex;
   width: auto;
-  /* override the 50% from fig-cmp, let the image dictate size */
 }
 
 figure.fig-cmp.pixel-art .fig-cmp-side img {
   border-radius: 0;
-  /* border is on the wrapper, not individual images */
   border: none;
+}
+
+figure figcaption {
+  max-width: 60%;
+  margin-left: 20%;
+}
+
+
+@media (min-width: 1000px) {
+  figure.pixel-art img.scale-two {
+    max-width: none;
+  }
+
+  figure.pixel-art img.scale-three,
+  figure.pixel-art img.scale-four {
+    max-width: none;
+  }
+
+  figure.fig-cmp.pixel-art .fig-cmp-images {
+    max-width: none;
+  }
+
+  figure.pixel-art,
+  figure.fig-cmp.pixel-art {
+    width: 100vw;
+    position: relative;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  figure figcaption {
+    max-width: 40%;
+    transform: translateX(75%);
+    margin-left: 0;
+  }
 }
 
 @media (max-width: 600px) {

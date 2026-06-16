@@ -142,7 +142,38 @@ func _on_frame_post_draw() -> void:
 
 ## A GIF of the Past
 
-{{< todo text="write this section talk about magick and ffmpeg and also the native gdscript solution">}}
+### A GDScript Native Solution?
+
+{{< todo text="write how this was slow and not thread safe">}}
+
+### Creating GIFs with FFMPEG
+
+{{< pixel_art src="gif/gif_making/bg_ffmpeg.gif" scale="two" alt="A  GIF made using FFMPEG where the generated palette breaks intended art style" caption="Due to the large variance in background colours, the important colours, such as the one on our main character, are corrupted" >}}
+
+Now one option was to try and remove a bunch of the effects to keep the total palette of the level down to 256 colors. In this case, it seemed to work:
+
+{{< pixel_art src="gif/gif_making/nbg_ffmpeg.gif" scale="two" alt="A GIF made using FFMPEG where the generated palette works due to less background effects" caption="With less variation in the background, there's space in the palette for the character's colours to remain true" >}}
+
+But this had an important issue. We can manually toggle effects for crisper GIFs without a problem, but as the game grows in complexity we expect more shaders and other changes to start changing the total colour count. There were a few different ideas I cycled though:
+
+1. Can I force the player colours into the palette wy feeding in the player image into the palette generation? This in fact did work, but then I realised the blue mushroom was also corrupt. I could add this blue in, but then when do I stop? There will be many unique elements in levels with small distinct colours and I can't account for them all without running out of colours generally!
+2. Can I just use a different set of arguments to `ffmpeg` to get a colour palette which selects for lots of different hues instead of from the most common? I think maybe you can, but I couldn't figure it out from the documentation.
+3. Are all libraries going to behave the same? Maybe I can try something other than `ffmpeg`?
+
+### Creating GIFs with Image Magick
+
+### More Comparisons between FFMPEG and Image Magick
+
+If you've got this far I'm now assuming you're a bit of a GIF nerd and are interested in seeing some more examples. I found that cropping the images from the full resolution to a partial viewport also improved things (because obviously there's less colours again).
+
+#### FFMPEG
+
+{{< pixel_cmp src1="/gif/gif_making/with_ffmpeg.gif" src2="gif/gif_making/without_ffmpeg.gif" alt1="A cropped gif made using FFMPEG with background effects" alt2="A cropped gif made using FFMPEG without background effects" caption="Another fix is seen here, where by simply cropping the GIF, FFMPEG is able to get a more accurate colour palette to fit within rhe 256 available colours." scale="two" hideLabels="true" >}}
+
+#### Image Magick
+
+{{< pixel_cmp src1="/gif/gif_making/with_imagemagick.gif" src2="gif/gif_making/without_imagemagick.gif" alt1="A cropped gif made using Image Magick with background effects" alt2="A cropped gif made using Image Magick without background effects" caption="Compared with FFMPEG, with and without the background effects, the colour of the GIF remains closer to the true colours of the game." scale="two" hideLabels="true" >}}
+
 
 ## Future Improvements
 
