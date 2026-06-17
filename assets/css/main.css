@@ -310,6 +310,32 @@ figure.fig-cmp.pixel-art .fig-cmp-side img {
   border: none;
 }
 
+/* Pixel art video */
+
+figure.pixel-art video {
+  width: 100%;
+  aspect-ratio: var(--w) / var(--h);
+  object-fit: fill;
+  max-width: none;
+}
+
+figure.pixel-art video.scale-one {
+  width: var(--w, 100%);
+  max-width: 100%;
+}
+
+figure.pixel-art video.scale-two {
+  width: min(calc(2 * var(--w)), 100%);
+}
+
+figure.pixel-art video.scale-three {
+  width: min(calc(3 * var(--w)), 100%);
+}
+
+figure.pixel-art video.scale-four {
+  width: min(calc(4 * var(--w)), 100%);
+}
+
 figure figcaption {
   max-width: 60%;
   margin-left: 20%;
@@ -328,11 +354,8 @@ figure figcaption {
 
 
 @media (min-width: 1200px) {
-  figure.pixel-art img.scale-two {
-    max-width: none;
-  }
 
-  figure.pixel-art img.scale-three,
+  figure.pixel-art img.scale-two figure.pixel-art img.scale-three,
   figure.pixel-art img.scale-four {
     max-width: none;
   }

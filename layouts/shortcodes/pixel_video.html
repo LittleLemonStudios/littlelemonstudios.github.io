@@ -1,0 +1,10 @@
+{{- $src := .Get "src" -}}
+<figure class='fig pixel-art'>
+    <video class='scale-{{ .Get "scale" | default "one" }}' style='--w: {{ .Get "w" }}px; --h: {{ .Get "h" }}px;'
+        autoplay muted loop playsinline draggable="false">
+        <source src='{{ $src }}' type='video/mp4'>
+    </video>
+    {{ with .Get "caption" }}
+    <figcaption>{{ . }}</figcaption>
+    {{ end }}
+</figure>

@@ -199,8 +199,8 @@ So `ffmpeg` may have been one option, but it's certainly not the only one. Anoth
 
 {{< 
 	pixel_slider 
-    src1="/gif/gif_making/bg_ffmpeg.gif" 
-	src2="/gif/gif_making/bg_imagemagick.gif" 
+    src1="/png/gif_making/bg_ffmpeg_15.png" 
+	src2="/png/gif_making/bg_imagemagick_15.png" 
 	alt1="A cropped gif made using FFMPEG with background effects"
 	alt2="A cropped gif made using Image Magick with background effects" caption="A direct comparison between FFMPEG and Image Magick generated GIFs when background effects are on, leading to a large colour space in the game frame data. The resulting GIF produced by Image Magick handles the player and mushroom colours much better." 
 	scale="two" 
@@ -210,8 +210,8 @@ So `ffmpeg` may have been one option, but it's certainly not the only one. Anoth
 
 {{< 
 	pixel_slider 
-    src1="/gif/gif_making/nbg_ffmpeg.gif" 
-	src2="/gif/gif_making/nbg_imagemagick.gif" 
+    src1="/png/gif_making/nbg_ffmpeg_84.png" 
+	src2="/png/gif_making/nbg_imagemagick_84.png" 
 	alt1="A cropped gif made using FFMPEG without background effects"
 	alt2="A cropped gif made using Image Magick without background effects" caption="A direct comparison between FFMPEG and Image Magick generated GIFs when background effects are off, reducing the colour space of the frame data. The resulting GIFs are nearly identical." 
 	scale="two" 
@@ -292,6 +292,17 @@ func _set_ui_status(text: String, auto_hide_seconds: float = 0.0) -> void:
 ```
 
 Which shows and updates the label, and optionally auto-hides the label after a window.
+
+## Video
+
+{{< 
+  pixel_video 
+  src="/mp4/gif_making/nbg.mp4" 
+  w="480"
+  h="270"
+  scale="two"
+  caption="Optional caption." 
+>}}
 
 ## Future Improvements
 
