@@ -25,5 +25,8 @@
 <meta name="theme-color" content="#ffffff">
 
 <title>{{ if .IsHome }}{{ site.Title }}{{ else }}{{ printf "%s | %s" .Title site.Title }}{{ end }}</title>
+
+{{ partial "head_meta.html" . }}
+
 {{ partialCached "head/css.html" . }}
 {{ partialCached "head/js.html" . }}

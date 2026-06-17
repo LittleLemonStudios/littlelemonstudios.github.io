@@ -1,0 +1,44 @@
+{{- $title := .Title -}}
+{{- $description := "" -}}
+{{- $url := .Permalink -}}
+{{- $image := "" -}}
+
+{{/* Homepage */}}
+{{- if .IsHome -}}
+  {{- $title = "Little Lemon Studios" -}}
+  {{- $description = "A devlog following the development of Moss King, an indie platformer built in Godot." -}}
+  {{- $image = absURL "og-image.png" -}}
+
+{{/* Blog posts */}}
+{{- else if .IsPage -}}
+  {{- $description = .Description | default .Summary | plainify | truncate 160 -}}
+  {{/* Use the first image in the page if available */}}
+  {{- with .Resources.GetMatch "*.png" -}}
+    {{- $image = .Permalink -}}
+  {{- else -}}
+    {{- $image = absURL "pomu.png" -}}
+  {{- end -}}
+{{- end -}}
+
+<meta name="description" content="{{ $description }}">
+<link rel="canonical" href="{{ $url }}">
+<meta property="og:type" content="{{ if .IsHome }}website{{ else }}article{{ end }}">
+<meta property="og:url" content="{{ $url }}">
+<meta property="og:title" content="{{ $title }}">
+<meta property="og:description" content="{{ $description }}">
+<meta property="og:image" content="{{ $image }}">
+<meta property="og:site_name" content="Little Lemon Studios">
+
+{{- if .IsPage }}
+<meta property="article:published_time" content='{{ .Date.Format "2006-01-02T15:04:05Z07:00" }}'>
+{{- with .Params.tags }}
+{{- range . }}
+<meta property="article:tag" content="{{ . }}">
+{{- end }}
+{{- end }}
+{{- end }}
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{ $title }}">
+<meta name="twitter:description" content="{{ $description }}">
+<meta name="twitter:image" content="{{ $image }}">
