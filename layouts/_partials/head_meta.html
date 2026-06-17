@@ -5,19 +5,19 @@
 
 {{/* Homepage */}}
 {{- if .IsHome -}}
-  {{- $title = "Little Lemon Studios" -}}
-  {{- $description = "A devlog following the development of Moss King, an indie platformer built in Godot." -}}
-  {{- $image = absURL "og-image.png" -}}
+{{- $title = "Little Lemon Studios" -}}
+{{- $description = "A devlog following the development of Moss King, an indie platformer built in Godot." -}}
+{{- $image = absURL "og-image.png" -}}
 
 {{/* Blog posts */}}
 {{- else if .IsPage -}}
-  {{- $description = .Description | default .Summary | plainify | truncate 160 -}}
-  {{/* Use the first image in the page if available */}}
-  {{- with .Resources.GetMatch "*.png" -}}
-    {{- $image = .Permalink -}}
-  {{- else -}}
-    {{- $image = absURL "pomu.png" -}}
-  {{- end -}}
+{{- $description = .description | default .Summary | plainify | truncate 160 -}}
+{{/* Use the first image in the page if available */}}
+{{- with .Resources.GetMatch "*.png" -}}
+{{- $image = .Permalink -}}
+{{- else -}}
+{{- $image = absURL "/pomu.png" -}}
+{{- end -}}
 {{- end -}}
 
 <meta name="description" content="{{ $description }}">
