@@ -13,6 +13,12 @@ document.addEventListener('DOMContentLoaded', () => {
     updateDimensions();
     window.addEventListener('resize', updateDimensions);
 
+    // Also update once images are loaded
+    wrap.querySelectorAll('img').forEach(img => {
+      img.addEventListener('load', updateDimensions);
+    });
+
+
     function setPosition(clientX) {
       const rect = wrap.getBoundingClientRect();
       const pct = Math.min(Math.max((clientX - rect.left) / rect.width, 0), 1);
@@ -66,20 +72,6 @@ document.addEventListener('DOMContentLoaded', () => {
       setPosition(targetX);
       e.preventDefault();
     });
-  });
-
-  // Allow the slider images to be resized
-  function updateDimensions() {
-    const rect = wrap.getBoundingClientRect();
-    wrap.style.setProperty('--slider-width', `${rect.width}px`);
-  }
-
-  updateDimensions();
-  window.addEventListener('resize', updateDimensions);
-
-  // Also update once images are loaded
-  wrap.querySelectorAll('img').forEach(img => {
-    img.addEventListener('load', updateDimensions);
   });
 
   // Copy buttons

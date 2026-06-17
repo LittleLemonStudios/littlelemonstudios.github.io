@@ -13,10 +13,10 @@
 <figure class="fig-slider pixel-art">
     <div class="fig-slider-wrap scale-{{ $scale }}"
         style="{{ with $img1 }}--w: {{ .Width }}px; --h: {{ .Height }}px;{{ end }}">
-        <img class="fig-slider-img fig-slider-before scale-{{ $scale }}"
+        <img class="fig-slider-img fig-slider-before"
             src="{{ with $img1 }}{{ .RelPermalink }}{{ else }}{{ $src1 }}{{ end }}" alt="{{ $alt1 }}" draggable="false">
         <div class="fig-slider-after-wrap">
-            <img class="fig-slider-img fig-slider-after scale-{{ $scale }}"
+            <img class="fig-slider-img fig-slider-after"
                 src="{{ with $img2 }}{{ .RelPermalink }}{{ else }}{{ $src2 }}{{ end }}" alt="{{ $alt2 }}"
                 draggable="false">
         </div>

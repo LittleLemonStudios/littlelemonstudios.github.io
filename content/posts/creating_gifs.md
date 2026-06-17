@@ -176,23 +176,9 @@ If you've got this far I'm now assuming you're a bit of a GIF nerd and are inter
 	alt1="A cropped gif made using FFMPEG with background effects"
 	alt2="A cropped gif made using FFMPEG without background effects" caption="A direct comparison between FFMPEG and Image Magick generated GIFs when background effects are on" 
 	scale="two" 
-	hideLabels="true" 
+	label1="Image Magick"
+	label2="ffmpeg"
 >}}
-
-{{< 
-	pixel_slider 
-    src1="/gif/gif_making/nbg_ffmpeg.gif" 
-	src2="gif/gif_making/nbg_imagemagick.gif" 
-	alt1="A cropped gif made using FFMPEG with background effects"
-	alt2="A cropped gif made using FFMPEG without background effects" caption="A direct comparison between FFMPEG and Image Magick generated GIFs when background effects are off" scale="two" hideLabels="true" 
->}}
-
-
-{{< pixel_cmp src1="/gif/gif_making/with_ffmpeg.gif" src2="gif/gif_making/without_ffmpeg.gif" alt1="A cropped gif made using FFMPEG with background effects" alt2="A cropped gif made using FFMPEG without background effects" caption="Another fix is seen here, where by simply cropping the GIF, FFMPEG is able to get a more accurate colour palette to fit within rhe 256 available colours." scale="two" hideLabels="true" >}}
-
-#### Image Magick
-
-{{< pixel_cmp src1="/gif/gif_making/with_imagemagick.gif" src2="gif/gif_making/without_imagemagick.gif" alt1="A cropped gif made using Image Magick with background effects" alt2="A cropped gif made using Image Magick without background effects" caption="Compared with FFMPEG, with and without the background effects, the colour of the GIF remains closer to the true colours of the game." scale="two" hideLabels="true" >}}
 
 
 ## Future Improvements

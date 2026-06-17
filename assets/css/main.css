@@ -514,6 +514,7 @@ figure figcaption {
   font-size: 0.75rem;
   border-radius: 3px;
   pointer-events: none;
+  line-height: 1.3;
 }
 
 .fig-slider-label--before {
