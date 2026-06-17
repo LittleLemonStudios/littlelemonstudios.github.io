@@ -316,6 +316,17 @@ figure figcaption {
 }
 
 
+@media (max-width: 600px) {
+  figure figcaption {
+    text-align: left;
+    max-width: calc(100% - 20px);
+    margin-left: 10px;
+  }
+
+}
+
+
+
 @media (min-width: 1200px) {
   figure.pixel-art img.scale-two {
     max-width: none;
@@ -617,6 +628,12 @@ figure figcaption {
   margin-bottom: 2.5rem
 }
 
+@media (max-width: 600px) {
+  .tags {
+    margin-left: 0;
+  }
+}
+
 .tag a {
   display: inline-block;
   background: var(--tag-color);
@@ -718,7 +735,6 @@ code {
   padding: 0.15em 0.4em;
   border-radius: 4px;
   font-size: 0.875em;
-  word-break: break-all;
 }
 
 @media (max-width: 800px) {
