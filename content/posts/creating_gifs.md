@@ -1,9 +1,9 @@
 +++
-title = "Creating GIFs directly from Gameplay"
+title = "Creating Clips directly from Gameplay"
 date = 2026-06-09
 tags = ["godot", "dev-tools", "rendering"]
 author = "jack"
-description = "How we created a lightweight method to continuously record the game viewport to directly generate GIFs from gameplay"
+description = "How we created a lightweight method to continuously record the game viewport to directly generate video and GIF files from gameplay"
 draft = false
 +++
 
@@ -17,7 +17,7 @@ Now, on the Switch, I imagine Nintendo have done some very clever tricks at the 
 
 ## The Plan
 
-Before we talk about the Godot internals, let's sketch out roughly what we want to do. To create a video or GIF of the past, we need a way to continuously store what is happening on the screen at any given point. For encoding reasons, we chose to record GIFs at 25 FPS, but technically this can be anything we want.
+Before we talk about the Godot internals, let's sketch out roughly what we want to do. To create a video or GIF of the past, we need a way to continuously store what is happening on the screen at any given point. For encoding reasons, we chose to record GIFs at 25 FPS, but technically this can be anything we want, especially if we're focused on recording an mp4 instead.
 
 {{< comment text="A GIF is a series of images separated by some delay. The delay is encoded in 100ths of seconds, so it's good to pick a FPS which evenly divides 100." >}}
 
@@ -25,7 +25,7 @@ What this ultimately means is that if we want to remember the last `n` seconds o
 
 Then, we need to handle how the frame data is saved as a file. We expect the player to press a button to prompt the save. At this point, all of the viewport frame data needs to be processed to turn into a video. This ultimately means encoding every frame in some image format which is then compressed into some video format (such as mp4) or a GIF.
 
-Continuously capturing frame data and creating a GIF from this data are essentially two completely independent pieces of work, but they need to be aware of each other. In particular, we expect the creation of the GIF to be computationally heavy so we want to make a worker thread thread to do the work in parallel to the game. This means ensuring we can package the GIF data in a thread safe manner.
+Continuously capturing frame data and creating a video from this data are essentially two completely independent pieces of work, but they need to be aware of each other. In particular, we expect the creation of the video to be computationally heavy so we want to make a worker thread thread to do the work in parallel to the game. This means ensuring we can package the frame data in a thread safe manner.
 
 {{< comment text="Another option not explored in this post at all would be to capture game input and then play back all these inputs when the user asks to save the clip. This would have to pause gameplay but probably not introduce any lag during the gameplay before the clip." >}}
 
@@ -92,6 +92,8 @@ by calling `ScreenRecorder.register_viewport(self)` within the script of `Record
 
 With `target_viewport` now capturing what we want, the easiest solution is to then save to the buffer the image directly: `target_viewport.get_image()`, which returns an `Image` type. The issue with this method is that it introduces latency into the game. This is because the CPU has to wait for the texture from the GPU. If the GPU is busy, the CPU hits a wall and has to wait, causing lag. Later in the blog we talk about some other ideas, but storing the image data itself is what we use and the FPS of the game seem to drop from about 120+ to 80-110 FPS while the recording is active, which is something we can work around for now. 
 
+With the small resolution image, because the game is pixel-perfect, we can apply nearest neighbour scaling to the GIF or video at creation to get higher resolution files if needed. For use within this blog we can actually use the scaling within the browser by setting `image-rendering: pixelated;` as a property keeping the file size smaller.
+
 
 ### Triggering Frame Capture
 
@@ -136,9 +138,9 @@ func _on_frame_post_draw() -> void:
 ```
 
 
-## A GIF of the Past
+## A Clip of the Past
 
-We now have everything we need to create a GIF at any given moment. We can hook up a listener for `_input()` which calls `_start_gif_export()` on the player's input (we chose `G` for GIF). The main thing we need to do now is ensure is we can offload all of the work of GIF creation into a parallel CPU thread.
+We now have everything we need to create a video or GIF at any given moment. We can hook up a listener for `_input()` which calls `_start_gif_export()` on the player's input (we chose `G` for GIF). The main thing we need to do now is ensure is we can offload all of the work of GIF creation into a parallel CPU thread.
 
 In Godot, we can make the `WorkerThread` thread as easily as `Thread.new()`, 
 then all we have to do is copy all mutable data to ensure the work done is thread safe, in our code it looks like this
@@ -196,6 +198,17 @@ There were a few different ideas I cycled though:
 
 So `ffmpeg` may have been one option, but it's certainly not the only one. Another program, [Image Magick](https://imagemagick.org/command-line-options) is something I had used in the past for other image manipulation. As this was a dev tool, I had no issue with asking the others to install the binary to enable this feature. Trying it out, the converted GIF took slightly longer to be made, but the resulting colours worked much better, in both the clips with and without background effects.
 
+{{< 
+	pixel_art 
+	src="gif/gif_making/bg_imagemagick.gif" 
+	scale="two" 
+	alt="A GIF made using Image Magick where the generated palette fits our game better due to a different sampling method which catches a wider range of hues" 
+	caption="The Image Magick generated palette fits our game better due to a different sampling method, which catches a wider range of hues and a truer representation of the game" 
+>}}
+
+### Direct Comparison
+
+If you're interested, here's two sliding windows which directly compare frames from each GIF, comparing the same rendered frame from Image Magick and FFMPEG.
 
 {{< 
 	pixel_slider 
@@ -271,11 +284,86 @@ func _encode_threaded(buffer_copy: Array[Image], index_copy: int) -> void:
 	DirAccess.remove_absolute(tmp_dir)
 ```
 
+### Encoding to Video
+
+During the writing of this blog, I started also experimenting with recording directly to mp4. This results in being able to make a file directly from the saved PNG files and the colour capture does not have the 256 colour restriction, allowing the video to closely match the game. Included below is a `480 x 270` resolution video, upscaled using the nearest neighbour CSS property, but the mp4 compression is so good that you can upscale to 1080p and still have a clip under one megabyte.
+
+{{< 
+  pixel_video 
+  src="/mp4/gif_making/nbg.mp4" 
+  w="480"
+  h="270"
+  scale="two"
+  caption="An mp4 created using FFMPEG with the same input PNG as the GIFs shown above" 
+>}}
+
+The only downside with th mp4 is that cropping the video after the fact. This has a solution in our script, where you can set parameters to crop the images before the video is made, but this requires manual work and the flexibility of the GIF means we'll probably end up using that more when creating resources for the blog (where as the mp4 is better for sharing bugs / small clips internally as a team).
+
+The creation of both files in the code after the update to have both options now looks like this:
+
+```gdscript
+	var timestamp = Time.get_datetime_string_from_system().replace(":", "-")
+	var output = []
+	var any_failed = false
+
+	if CAPTURE_GIF:
+		var output_path = "%s/recording_%s.gif" % [output_dir, timestamp]
+		var magick_call = ["-delay", str(roundi(100.0 / float(CAPTURE_FPS)))]
+		magick_call.append_array(saved_paths) # Created while saving the PNG files
+		magick_call.append_array(
+			[
+				"-loop",
+				"0",
+				"+dither",
+				"-colors",
+				"256",
+				output_path
+			]
+		)
+		var exit = OS.execute(magick_path, magick_call, output, true)
+		if exit != 0:
+			push_error("ImageMagick failed:\n" + "\n".join(output))
+			any_failed = true
+		else:
+			print("GIF saved to: ", output_path)
+
+	if CAPTURE_MP4:
+		var output_path = "%s/recording_%s.mp4" % [output_dir, timestamp]
+		var mp4_call = [
+			"-y",
+			"-framerate",
+			str(CAPTURE_FPS),
+			"-i",
+			tmp_dir + "/frame_%04d.png",
+			"-vf",
+			"scale=4*iw:4*ih:flags=neighbor,format=yuv420p",
+			"-c:v",
+			"libx264",
+			"-pix_fmt",
+			"yuv420p",
+			output_path
+		]
+		var exit = OS.execute(ffmpeg_path, mp4_call, output, true)
+		if exit != 0:
+			push_error("ffmpeg mp4 failed:\n" + "\n".join(output))
+			any_failed = true
+		else:
+			print("MP4 saved to: ", output_path)
+
+	# Cleanup
+	for path in saved_paths:
+		DirAccess.remove_absolute(path)
+	DirAccess.remove_absolute(tmp_dir)
+
+	call_deferred("_set_ui_status", "Recording Failed" if any_failed else "Recording Saved", 1.5)
+```
+
+
 ### Some UI Touches
 
 Lastly we'll need to hook in some UI which tells the player when they have started clipping, when it finishes and whether the clip succeeded or failed to be saved.
 
-We did this by adding a `GifStatusLabel` node to our `UI` canvas and registering this with the global `ScreenRecorder` in the same way we registered the `SubViewport`. Then we wrote the following helper function
+We did this by adding a `RecordingStatusLabel` node to our `UI` canvas and registering this with the global `ScreenRecorder` in the same way we registered the `SubViewport`. Then we wrote the following helper function
 
 ```gdscript
 func _set_ui_status(text: String, auto_hide_seconds: float = 0.0) -> void:
@@ -292,17 +380,6 @@ func _set_ui_status(text: String, auto_hide_seconds: float = 0.0) -> void:
 ```
 
 Which shows and updates the label, and optionally auto-hides the label after a window.
-
-## Video
-
-{{< 
-  pixel_video 
-  src="/mp4/gif_making/nbg.mp4" 
-  w="480"
-  h="270"
-  scale="two"
-  caption="Optional caption." 
->}}
 
 ## Future Improvements
 
