@@ -11,23 +11,21 @@ Carps and I first met by playing each other's Mario Maker 2 levels. Back then, w
 
 The whole workflow was really easy, the switch would remember the last 30 seconds of gameplay, and so as long as each section broke down easily enough, you could stich the three sections of a usual level in three 30 second chunks. [Here's an example](https://www.reddit.com/r/MarioMaker/s/ZeL2yvLMFb), hosted on Reddit.
 
-I really like this retroactive way of capturing gameplay. Sometimes when you play, something exciting happens and being able to extract the past, rather than preemptively asking the game to record before the cool thing, allows you to catch times which are surprising. This is especially true when you're making a game and sometimes a hard to replicate bug can appear. Being able to request the previous few seconds of gameplay is ideal for bug evidence.
+I really like this retroactive way of capturing gameplay. Sometimes when you play something unexpected can happen. Being able to extract the past, rather than preemptively asking the game to record before the cool thing happens, allows you to capture the moments you'd otherwise miss. This is especially true when you're making a game and you want to save evidence of some hard to replicate bug.
 
 Now, on the Switch, I imagine Nintendo have done some very clever tricks at the hardware level to parallelise the storage of the clip frames without introducing any lag into the gameplay. This blog post is our attempt to get a similar level of functionality within Godot.
 
 ## The Plan
 
-Before we talk about the Godot internals, let's sketch out roughly what we want to do. To create a video, or GIF, of the past we need a way to continuously store what is happening on the screen at any given point. For encoding reasons, we chose to record GIFs at 25 FPS, but technically this can be totally custom.
+Before we talk about the Godot internals, let's sketch out roughly what we want to do. To create a video or GIF of the past, we need a way to continuously store what is happening on the screen at any given point. For encoding reasons, we chose to record GIFs at 25 FPS, but technically this can be anything we want.
 
 {{< comment text="A GIF is a series of images separated by some delay. The delay is encoded in 100ths of seconds, so it's good to pick a FPS which evenly divides 100." >}}
 
-What this ultimately means is that if we want to remember the last `n` seconds of gameplay, we'll need to store `25*n` frames in memory and continuously remove the oldest frames when adding the latest frame. We need the capturing and saving of this data to be fast enough that we can reasonably perform every 40ms while the main game is running.
+What this ultimately means is that if we want to remember the last `n` seconds of gameplay, we'll need to store `25*n` frames in memory and continuously remove the oldest frames when adding the latest frame. We need the capturing and storing of this data to be fast enough that we can reasonably perform the action every 40ms, without introducing too much lag.
 
-Then, we need to handle how this is saved. We expect the player to press a button to prompt the save. At this point, all of the viewport frame data needs to be processed to turn into a video. This ultimately means encoding every frame in some image format which is then compressed into some video format (such as mp4) or a GIF.
+Then, we need to handle how the frame data is saved as a file. We expect the player to press a button to prompt the save. At this point, all of the viewport frame data needs to be processed to turn into a video. This ultimately means encoding every frame in some image format which is then compressed into some video format (such as mp4) or a GIF.
 
-Lastly we'll need to hook in some UI which tells the player when they have started clipping, when it finishes and whether the clip succeeded or failed to be saved.
-
-Capturing frame data and creating a GIF are essentially two completely independent pieces of work, but they need to be aware of each other. In particular, we expect the creation of the GIF to be computationally heavy and so we want to ensure that the computer attempts to do as much of this work on an independent thread to the one the game is running on. This is important to remember and will limit how efficiently we can store the frame data itself.
+Continuously capturing frame data and creating a GIF from this data are essentially two completely independent pieces of work, but they need to be aware of each other. In particular, we expect the creation of the GIF to be computationally heavy so we want to make a worker thread thread to do the work in parallel to the game. This means ensuring we can package the GIF data in a thread safe manner.
 
 {{< comment text="Another option not explored in this post at all would be to capture game input and then play back all these inputs when the user asks to save the clip. This would have to pause gameplay but probably not introduce any lag during the gameplay before the clip." >}}
 
@@ -40,7 +38,7 @@ Before tackling how we obtain each frame, let's discuss how we can manage the me
 A sketch of this in code would look like this:
 
 ```gdscript
-# These constants can be freely chosen to balance performance
+# These constants can be freely chosen to balance memory/performance
 const CAPTURE_FPS: int = 25
 const BUFFER_SECONDS: int = 5
 const BUFFER_SIZE: int = CAPTURE_FPS * BUFFER_SECONDS
@@ -59,7 +57,7 @@ func _save_to_buffer(img: Image) -> void:
 
 What this means is that the buffer never needs to have its size modified and streamlines how we can save and overwrite the oldest of frames without needing to explicitly remove anything.
 
-Reading the frames in order is then as easy as:
+Reading the frames in order when needed is then as easy as:
 
 ```gdscript
 for i in BUFFER_SIZE:
@@ -71,9 +69,9 @@ for i in BUFFER_SIZE:
 
 With an efficient memory structure to hold the frame data, we now need to make a decision about exactly what data we're saving for each frame.
 
-This point is where memory considerations need to be made. Our pixel art game runs in a `480x270` viewport, but is then upscaled to a much higher resolution to allow for HD elements. There is a 16x memory cost in storing the `1920x1080` viewport texture compared to the low-res `480x270`. As a result, we decided to capture a `SubViewport` which contained only the low-res gameplay elements which means all UI and other HD elements introduced into the game are invisible to our screen capture.
+This point is where memory considerations need to be made. Our pixel art game runs in a `480x270` viewport, but is then upscaled to a much higher resolution to allow for HD elements. There is a 16x memory cost in storing the `1920x1080` viewport texture compared to the low-res `480x270`. As a result, we decided to capture a `SubViewport` which contained only the low-res gameplay elements which means all UI and other HD elements introduced into the game are "invisible" to our screen capture.
 
-As explained in [Perfecting 36 Year Old Rendering in a Modern Engine](/posts/pixel_perfect), we actually have two low resolution sub viewports within the game to have particles behave as we want. As a result we can't simply call a texture directly from where the game is drawn. Instead, we make a new `SubViewportContainer` with the following structure:
+As explained in [Perfecting 36 Year Old Rendering in a Modern Engine](/posts/pixel_perfect), we actually have two low resolution `SubViewport` nodes within the game to ensure particles behave as we want. As a result we can't simply call a texture directly from where the game is drawn. Instead, we make a new `SubViewportContainer` with the following structure:
 
 ```asm
 RecordingSubViewportContainer (SubViewportContainer)
@@ -90,18 +88,18 @@ func register_viewport(viewport: SubViewport) -> void:
 	target_viewport = viewport
 ```
 
-by calling `ScreenRecorder.register_viewport(self)` within the script of `RecordingSubViewport`. Now, most of the time this viewport is useless, so we set the viewport rendering mode to `DISABLED` and then set it to `UPDATE_ONCE` only on the frame we want to capture.
+by calling `ScreenRecorder.register_viewport(self)` within the script of `RecordingSubViewport`. For gameplay, this viewport is useless, so we set the viewport rendering mode to `DISABLED` and then set it to `UPDATE_ONCE` only on the frame we want to capture before turning it off again.
 
-With `target_viewport` now capturing what we want, the easiest solution is to then save to the buffer the image directly: `target_viewport.get_image()`, however this introduces latency into the game as the CPU waits for the texture from the GPU which might not be ready to send this data. Later in the blog we talk about some other ideas, but this is actually what is being used currently and we find the FPS of the game drops from about 120+ to 80-110 FPS while the recording is active. 
+With `target_viewport` now capturing what we want, the easiest solution is to then save to the buffer the image directly: `target_viewport.get_image()`, which returns an `Image` type. The issue with this method is that it introduces latency into the game. This is because the CPU has to wait for the texture from the GPU. If the GPU is busy, the CPU hits a wall and has to wait, causing lag. Later in the blog we talk about some other ideas, but storing the image data itself is what we use and the FPS of the game seem to drop from about 120+ to 80-110 FPS while the recording is active, which is something we can work around for now. 
 
 
 ### Triggering Frame Capture
 
-With a ring buffer in place and a way to save each individual frame, we now need to hook up various signals to ensure that we are consistently saving frame data to allow the resulting clip to run at the chosen FPS. At 25 FPS, we need to trigger capture every 1/25 seconds or equivalently every 40 ms.
+With a ring buffer in place and a way to save each individual frame, we now need to hook up various signals to ensure that we are consistently saving frame data to allow the resulting clip to run at the chosen FPS which matches the game itself. At 25 FPS, we need to trigger capture every 1/25 seconds or equivalently every 40 ms.
 
-The rough set up is as follows. We store a constant `TICK_LENGTH` equal to the tick length. We then set a timer variable `tick_time` at `_ready()` equal to this value. Within the `_process(delta: float)` method, we decrease `tick_time` and if this value is non-positive, we trigger the code to capture a frame and add `TICK_LENGTH` back to `tick_time`.
+The rough set up is as follows. We create a constant `TICK_LENGTH` equal to the tick length (0.04s). We then set a timer variable `tick_time` at `_ready()` equal to this value. Within the `_process(delta: float)` method, we decrease `tick_time` and if this value is non-positive, we trigger the code to capture a frame and add `TICK_LENGTH` back to `tick_time`.
 
-However, we need to be careful that we only capture the frame after the GPU has finished drawing. To abstract this, we instead simply update `waiting_for_frame: bool` to be `true` within the process loop. Then by connecting `RenderingServer.frame_post_draw.connect(_on_frame_post_draw)` we can only ever attempt to save data when Godot knows everything is ready to be saved.
+However, we need to be careful that we only capture the frame after the GPU has finished drawing. To abstract this, we instead simply update `waiting_for_frame: bool` to be `true` within the `_process()` method. Then by connecting a method to the `frame_post_draw` signal, we can ensure that the frame data is only captures after the full draw.
 
 The work flow of this section then looks roughly like:
 
@@ -124,9 +122,6 @@ func _process(delta: float) -> void:
 		waiting_for_frame = true
 
 func _on_frame_post_draw() -> void:
-	"""
-	Saves the current viewport texture to the buffer
-	"""
 	if not waiting_for_frame:
 		return
 
@@ -143,43 +138,160 @@ func _on_frame_post_draw() -> void:
 
 ## A GIF of the Past
 
+We now have everything we need to create a GIF at any given moment. We can hook up a listener for `_input()` which calls `_start_gif_export()` on the player's input (we chose `G` for GIF). The main thing we need to do now is ensure is we can offload all of the work of GIF creation into a parallel CPU thread.
+
+In Godot, we can make the `WorkerThread` thread as easily as `Thread.new()`, 
+then all we have to do is copy all mutable data to ensure the work done is thread safe, in our code it looks like this
+
+```gdscript
+func _start_gif_export() -> void:
+	# Snapshot the buffer immediately on main thread — fast
+	var buffer_copy = ring_buffer.duplicate()
+	var index_copy = buffer_index
+
+	if encode_thread.is_started():
+		encode_thread.wait_to_finish()
+	encode_thread = Thread.new()
+	encode_thread.start(_encode_threaded.bind(buffer_copy, index_copy))
+```
+
+Now the final decision is how to encode the frame data into a GIF, at a high level there's two options:
+
+1. Render the GIF within Godot itself by processing the `Image` data.
+2. Save all frame data to disk as a list of PNG files and then use an external binary dependency to process this data into a GIF
+
 ### A GDScript Native Solution?
 
-{{< todo text="write how this was slow and not thread safe">}}
+So option 1 is easier that you would think, thanks to the plugin [godot-gdgifexporter](https://github.com/jegor377/godot-gdgifexporter) which has created a pure gdscript GIF exporter. This is what I went with first, and I managed to make it work, but with some issues which meant the idea was abandoned.
+
+The main issue was that some aspects of the code were in some way not thread safe. Which means that creating the GIF in a `WorkerThread` crashed the game... I then tried running the code on the main thread and it "worked" (I had a GIF)! However, it took more than 10s to create it and the game lagged down to 1 FPS during saving. 
+
+This method could work better with a bit more work but ultimately I abandoned it in favour for option two. The right thing to do is probably refactor the whole thing to find the thread safety bug.
 
 ### Creating GIFs with FFMPEG
 
-{{< pixel_art src="gif/gif_making/bg_ffmpeg.gif" scale="two" alt="A  GIF made using FFMPEG where the generated palette breaks intended art style" caption="Due to the large variance in background colours, the important colours, such as the one on our main character, are corrupted" >}}
+The second option is to create a GIF using some general purpose tool, such as `ffmpeg`. To experiment with arguments, I took the frame data and dumped it as PNG files. Then, I made a simple script to run `ffmpeg` to first generate a palette (GIFs are forced to use a maximum of 256 colours) and then a second call to make a GIF from the PNG data and the freshly generated palette. The result was the following:
 
-Now one option was to try and remove a bunch of the effects to keep the total palette of the level down to 256 colors. In this case, it seemed to work:
+{{< pixel_art src="gif/gif_making/bg_ffmpeg.gif" scale="two" alt="A  GIF made using FFMPEG where the generated palette breaks intended art style" caption="The standard flags for palette creation favour the most popular colours in the frame data, which accuratly captures the background well but corrupts the rendering of the player and other small intractable objects such as the mushroom seen on the left" >}}
 
-{{< pixel_art src="gif/gif_making/nbg_ffmpeg.gif" scale="two" alt="A GIF made using FFMPEG where the generated palette works due to less background effects" caption="With less variation in the background, there's space in the palette for the character's colours to remain true" >}}
+Now the first option I tried was to try and remove a bunch of the effects we have in post rendering to keep the total palette of the level down to 256 colors. In this case, it seemed to work:
 
-But this had an important issue. We can manually toggle effects for crisper GIFs without a problem, but as the game grows in complexity we expect more shaders and other changes to start changing the total colour count. There were a few different ideas I cycled though:
+{{< 
+	pixel_art 
+	src="gif/gif_making/nbg_ffmpeg.gif" 
+	scale="two" 
+	alt="A GIF made using FFMPEG where the generated palette works due to less background effects" 
+	caption="With less variation in the background, there's space in the palette for the character's colours to remain true" 
+>}}
 
-1. Can I force the player colours into the palette wy feeding in the player image into the palette generation? This in fact did work, but then I realised the blue mushroom was also corrupt. I could add this blue in, but then when do I stop? There will be many unique elements in levels with small distinct colours and I can't account for them all without running out of colours generally!
+But this had an important issue. We can manually toggle effects for crisper GIFs without a problem, but as the game grows in complexity we expect more shaders and other changes to start changing the total colour count. If the colour space naturally grows beyond 256 colours during development this bug will reappear in a way which is much harder to manage.
+
+There were a few different ideas I cycled though:
+
+1. Can I force the player colours into the palette by feeding in the player image into the palette generation? This in fact did work, but then I realised the blue mushroom was still corrupt. I could add this blue in as well, but then when do I stop? There will be many unique elements in levels with small distinct colours and I can't account for them all without running out of colours generally!
 2. Can I just use a different set of arguments to `ffmpeg` to get a colour palette which selects for lots of different hues instead of from the most common? I think maybe you can, but I couldn't figure it out from the documentation.
 3. Are all libraries going to behave the same? Maybe I can try something other than `ffmpeg`?
 
 ### Creating GIFs with Image Magick
 
-### More Comparisons between FFMPEG and Image Magick
+So `ffmpeg` may have been one option, but it's certainly not the only one. Another program, [Image Magick](https://imagemagick.org/command-line-options) is something I had used in the past for other image manipulation. As this was a dev tool, I had no issue with asking the others to install the binary to enable this feature. Trying it out, the converted GIF took slightly longer to be made, but the resulting colours worked much better, in both the clips with and without background effects.
 
-If you've got this far I'm now assuming you're a bit of a GIF nerd and are interested in seeing some more examples. I found that cropping the images from the full resolution to a partial viewport also improved things (because obviously there's less colours again).
-
-#### FFMPEG
 
 {{< 
 	pixel_slider 
     src1="/gif/gif_making/bg_ffmpeg.gif" 
-	src2="gif/gif_making/bg_imagemagick.gif" 
+	src2="/gif/gif_making/bg_imagemagick.gif" 
 	alt1="A cropped gif made using FFMPEG with background effects"
-	alt2="A cropped gif made using FFMPEG without background effects" caption="A direct comparison between FFMPEG and Image Magick generated GIFs when background effects are on" 
+	alt2="A cropped gif made using Image Magick with background effects" caption="A direct comparison between FFMPEG and Image Magick generated GIFs when background effects are on, leading to a large colour space in the game frame data. The resulting GIF produced by Image Magick handles the player and mushroom colours much better." 
 	scale="two" 
 	label1="Image Magick"
 	label2="ffmpeg"
 >}}
 
+{{< 
+	pixel_slider 
+    src1="/gif/gif_making/nbg_ffmpeg.gif" 
+	src2="/gif/gif_making/nbg_imagemagick.gif" 
+	alt1="A cropped gif made using FFMPEG without background effects"
+	alt2="A cropped gif made using Image Magick without background effects" caption="A direct comparison between FFMPEG and Image Magick generated GIFs when background effects are off, reducing the colour space of the frame data. The resulting GIFs are nearly identical." 
+	scale="two" 
+	label1="Image Magick"
+	label2="ffmpeg"
+>}}
+
+At this point, I was really happy with the GIFs I was getting from Image Magick and the last step was to plug in the binary call within Godot. This is exceptionally easy with the `OS.execute` command which allows running commands directly from the engine! There's some string formatting to do to ensure the binary arguments are well formatted but the entire function of:
+
+1. Saving all frames as a PNG
+2. Processing the PNG frames into a GIF
+3. Saving the GIF and deleting the temporary PNG files
+
+was fairly easy to write and is copied below:
+
+```gdscript
+func _encode_threaded(buffer_copy: Array[Image], index_copy: int) -> void:
+	# write PNGs to a temp directory
+	var tmp_dir = OS.get_user_data_dir() + "/gif_tmp"
+	DirAccess.make_dir_absolute(tmp_dir)
+
+	for i in BUFFER_SIZE:
+		var frame: Image = buffer_copy[(index_copy + i) % BUFFER_SIZE]
+		if frame == null:
+			continue
+		var path = "%s/frame_%04d.png" % [tmp_dir, i]
+		frame.save_png(path)
+
+	# Save the GIF to the specified directory
+	var output_path = (
+		output_dir + "/recording_%s.gif" % Time.get_datetime_string_from_system().replace(":", "-")
+	)
+
+	# The magick call needs:
+	# - The delay time
+	# - Then the files
+	# - Then everything else
+	var magick_call = ["-delay", str(roundi(100.0 / float(CAPTURE_FPS)))]
+	for i in BUFFER_SIZE:
+		var path = "%s/frame_%04d.png" % [tmp_dir, i]
+		magick_call.append(path)
+	var magick_args = [
+		"-loop", "0", "+dither", "-colors", "256", output_path
+	]
+	magick_call.append_array(magick_args)
+
+	var output = []
+	var exit = OS.execute(magick_path, magick_call, output, true)
+	if exit != 0:
+		push_error("image magick encode pass failed")
+	else:
+		print("GIF saved to: ", output_path)
+
+	# Clean up temp files
+	for i in BUFFER_SIZE:
+		DirAccess.remove_absolute("%s/frame_%04d.png" % [tmp_dir, i])
+	DirAccess.remove_absolute(tmp_dir)
+```
+
+### Some UI Touches
+
+Lastly we'll need to hook in some UI which tells the player when they have started clipping, when it finishes and whether the clip succeeded or failed to be saved.
+
+We did this by adding a `GifStatusLabel` node to our `UI` canvas and registering this with the global `ScreenRecorder` in the same way we registered the `SubViewport`. Then we wrote the following helper function
+
+```gdscript
+func _set_ui_status(text: String, auto_hide_seconds: float = 0.0) -> void:
+	"""
+	Sets a label in the UI
+	"""
+	if ui_label == null:
+		return
+	ui_label.text = text
+	ui_label.visible = true
+	if auto_hide_seconds > 0.0:
+		await get_tree().create_timer(auto_hide_seconds).timeout
+		ui_label.visible = false
+```
+
+Which shows and updates the label, and optionally auto-hides the label after a window.
 
 ## Future Improvements
 
