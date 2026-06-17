@@ -11,7 +11,7 @@
 
 {{/* Blog posts */}}
 {{- else if .IsPage -}}
-{{- $description = .description | default .Summary | plainify | truncate 160 -}}
+{{- $description = .Params.description | default .Summary | plainify | truncate 160 -}}
 {{/* Use the first image in the page if available */}}
 {{- with .Resources.GetMatch "*.png" -}}
 {{- $image = .Permalink -}}
