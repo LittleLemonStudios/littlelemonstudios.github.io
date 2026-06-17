@@ -3,6 +3,7 @@ title = "Avoiding Edge Collision with One Way Platforms"
 date = 2026-06-13
 tags = ["godot", "platforming"]
 description = "Finding a (over engineered?) solution to one-way platform edge collision"
+author = "jack"
 draft = false
 +++
 

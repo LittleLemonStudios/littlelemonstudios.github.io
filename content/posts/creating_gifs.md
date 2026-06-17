@@ -2,6 +2,7 @@
 title = "Creating GIFs directly from Gameplay"
 date = 2026-06-09
 tags = ["godot", "dev-tools", "rendering"]
+author = "jack"
 description = "How we created a lightweight method to continuously record the game viewport to directly generate GIFs from gameplay"
 draft = false
 +++
@@ -167,6 +168,25 @@ But this had an important issue. We can manually toggle effects for crisper GIFs
 If you've got this far I'm now assuming you're a bit of a GIF nerd and are interested in seeing some more examples. I found that cropping the images from the full resolution to a partial viewport also improved things (because obviously there's less colours again).
 
 #### FFMPEG
+
+{{< 
+	pixel_slider 
+    src1="/gif/gif_making/bg_ffmpeg.gif" 
+	src2="gif/gif_making/bg_imagemagick.gif" 
+	alt1="A cropped gif made using FFMPEG with background effects"
+	alt2="A cropped gif made using FFMPEG without background effects" caption="A direct comparison between FFMPEG and Image Magick generated GIFs when background effects are on" 
+	scale="two" 
+	hideLabels="true" 
+>}}
+
+{{< 
+	pixel_slider 
+    src1="/gif/gif_making/nbg_ffmpeg.gif" 
+	src2="gif/gif_making/nbg_imagemagick.gif" 
+	alt1="A cropped gif made using FFMPEG with background effects"
+	alt2="A cropped gif made using FFMPEG without background effects" caption="A direct comparison between FFMPEG and Image Magick generated GIFs when background effects are off" scale="two" hideLabels="true" 
+>}}
+
 
 {{< pixel_cmp src1="/gif/gif_making/with_ffmpeg.gif" src2="gif/gif_making/without_ffmpeg.gif" alt1="A cropped gif made using FFMPEG with background effects" alt2="A cropped gif made using FFMPEG without background effects" caption="Another fix is seen here, where by simply cropping the GIF, FFMPEG is able to get a more accurate colour palette to fit within rhe 256 available colours." scale="two" hideLabels="true" >}}
 

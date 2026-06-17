@@ -1,0 +1,34 @@
+{{- $src1 := .Get "src1" -}}
+{{- $img1 := .Page.Resources.GetMatch $src1 -}}
+{{- if not $img1 -}}{{- $img1 = resources.Get $src1 -}}{{- end -}}
+
+{{- $src2 := .Get "src2" -}}
+{{- $img2 := .Page.Resources.GetMatch $src2 -}}
+{{- if not $img2 -}}{{- $img2 = resources.Get $src2 -}}{{- end -}}
+
+{{- $scale := .Get "scale" | default "two" -}}
+{{- $alt1 := .Get "alt1" -}}
+{{- $alt2 := .Get "alt2" -}}
+
+<figure class="fig-slider pixel-art">
+    <div class="fig-slider-wrap scale-{{ $scale }}"
+        style="{{ with $img1 }}--w: {{ .Width }}px; --h: {{ .Height }}px;{{ end }}">
+        <img class="fig-slider-img fig-slider-before scale-{{ $scale }}"
+            src="{{ with $img1 }}{{ .RelPermalink }}{{ else }}{{ $src1 }}{{ end }}" alt="{{ $alt1 }}" draggable="false">
+        <div class="fig-slider-after-wrap">
+            <img class="fig-slider-img fig-slider-after scale-{{ $scale }}"
+                src="{{ with $img2 }}{{ .RelPermalink }}{{ else }}{{ $src2 }}{{ end }}" alt="{{ $alt2 }}"
+                draggable="false">
+        </div>
+        <div class="fig-slider-handle" role="slider" aria-label="Image comparison slider" aria-valuemin="0"
+            aria-valuemax="100" aria-valuenow="50" tabindex="0">
+            <div class="fig-slider-line"></div>
+            <div class="fig-slider-button"></div>
+        </div>
+        {{ if not (.Get "hideLabels") }}
+        <span class="fig-slider-label fig-slider-label--before">{{ .Get "label1" | default "Before" }}</span>
+        <span class="fig-slider-label fig-slider-label--after">{{ .Get "label2" | default "After" }}</span>
+        {{ end }}
+    </div>
+    {{ with .Get "caption" }}<figcaption>{{ . }}</figcaption>{{ end }}
+</figure>
