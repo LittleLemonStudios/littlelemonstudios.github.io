@@ -68,6 +68,20 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  // Allow the slider images to be resized
+  function updateDimensions() {
+    const rect = wrap.getBoundingClientRect();
+    wrap.style.setProperty('--slider-width', `${rect.width}px`);
+  }
+
+  updateDimensions();
+  window.addEventListener('resize', updateDimensions);
+
+  // Also update once images are loaded
+  wrap.querySelectorAll('img').forEach(img => {
+    img.addEventListener('load', updateDimensions);
+  });
+
   // Copy buttons
   document.querySelectorAll('.highlight').forEach(block => {
     const wrapper = document.createElement('div')
