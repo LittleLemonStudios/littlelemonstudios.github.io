@@ -7,7 +7,13 @@ author = "jack"
 draft = false
 +++
 
-{{< todo text="Picture for the top of the blog." >}}
+{{< 
+  pixel_video 
+  src="/mp4/pixel_perfect/particles.mp4" 
+  w="480"
+  h="270"
+  scale="two"
+>}}
 
 Inspired by the games of our childhoods, Moss King is a tricky platforming game with beautiful pixel art created by our artist **Spooooky**. But unlike Super Mario World, the game itself is being built and rendered by Godot, an open source game engine which was designed to handle the complex graphics of modern games, and so getting the retro look out the box requires a little work.
 
@@ -34,8 +40,6 @@ World (Node2D)
 ```
 
 To ensure nothing is blurred in the scaling, the texture filter of the subviewport must be set to nearest neighbour.
-
-{{< todo text="Comparison between up-scaling between default and nearest neighbour." >}}
 
 ## Faking Pixel Perfect Alignment
 

@@ -7,6 +7,14 @@ description = "How we created a lightweight method to continuously record the ga
 draft = false
 +++
 
+{{< 
+  pixel_video 
+  src="/mp4/gif_making/nbg.mp4" 
+  w="480"
+  h="270"
+  scale="two"
+>}}
+
 Carps and I first met by playing each other's Mario Maker 2 levels. Back then, we would create a new level and using the Switch's inbuilt video capture, record ourselves finishing our own levels. We could then show work in progress by sharing a few clips.
 
 The whole workflow was really easy, the switch would remember the last 30 seconds of gameplay, and so as long as each section broke down easily enough, you could stich the three sections of a usual level in three 30 second chunks. [Here's an example](https://www.reddit.com/r/MarioMaker/s/ZeL2yvLMFb), hosted on Reddit.
