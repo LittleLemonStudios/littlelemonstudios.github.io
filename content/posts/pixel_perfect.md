@@ -39,8 +39,6 @@ World (Node2D)
     └── fonts, HUD, menus...
 ```
 
-To ensure nothing is blurred in the scaling, the texture filter of the subviewport must be set to nearest neighbour.
-
 ## Faking Pixel Perfect Alignment
 
 Run like this, there's a visual issue. Although the pixels are now bigger and crisp, the player's location in space is a float value which isn't locked visually to these large scaled pixels. As a result, when moving through the world, the character or any other moving object, can move freely across pixels boundaries, stopping mid-pixel and breaking the illusion that you're playing a game from 30 years ago on outdated hardware. 
@@ -49,7 +47,15 @@ Luckily, there's a simple fix for this. There's a value: `snap_2d_transforms_to_
 
 This set-up got us most of the way there and is how we have been developing the game over the past few months.
 
-{{< todo text="Comparison between snap being on an off, with Pomu between pixels." >}}
+{{< video_row
+  src1="/mp4/pixel_perfect/linear_no_snap.mp4"
+  label1="Linear texture filter"
+  src2="/mp4/pixel_perfect/nearest_no_snap.mp4"
+  label2="Nearest texture filter"
+  src3="/mp4/pixel_perfect/snapping.mp4"
+  label3="Transform snapping enabled"
+  caption="How sub-pixel movement renders for different configurations. We see using the nearest texture filter for rendering almost fixes the appearance but causes smearing at the feet. However, by snapping the transforms themselves we are protected against and visual bugs"
+>}}
 
 ## Jittering GPU Particles
 
@@ -59,7 +65,14 @@ The problem arises when we attach a `GPUParticle2D` node to the player and emit 
 
 I don't fully appreciate the bug (otherwise I would have tried making a pull request to fix it directly) but the rough issue seems to come down to async behaviour between how GPU particles move and how the CPU applies the pixel snapping. We find that the particles are moving correctly providing the parent stands still, but as soon as the player (or any node as a parent) changes position, the particle's screen position get snapped to the pixel grid *after* they are rendered with sub-pixel movement. As a result, particles seem to jitter into and out of pixel alignment causing this jitter effect:
 
-{{< todo text="Show bad jittering." >}}
+{{< 
+  pixel_video 
+  src="/mp4/pixel_perfect/flickering.mp4" 
+  w="512"
+  h="448"
+  scale="one"
+  caption="It's subtle, but looking closely the particle position appears fuzzy if they are emitted when the player moves. An exaggerated display of the bug is in the linked GitHub issue"
+>}}
 
 Of course the simple fix is to take `snap_2d_transforms_to_pixel` and set it to `false`. This removes the jittering, but reintroduces the visual bug of walking on subpixels. 
 
@@ -115,29 +128,39 @@ func _send_particles_to_shadow() -> void:
 
 Now, when the player spawns, we pass by reference every `GPUParticle2D` from the player to the shadow, and the particles can emit and follow the player in a separate viewport. As we have disabled pixel snapping in the shadow `SubViewport` all jittering has been removed and nothing else needs to change!
 
-{{< todo text="Show good particle effects." >}}
+
+{{< 
+  pixel_video 
+  src="/mp4/pixel_perfect/correct_opacity.mp4" 
+  w="512"
+  h="448"
+  scale="one"
+  caption="With the more complex set up, we get all the benefits of the player movement having pixel snapping while the particles themselves now emit as we have designed them"
+>}}
 
 ## Alpha Blending between Viewports
 
 For the particles to live on top of the game viewport, we need to set the background of `ShadowViewport` to be transparent to ensure everything passes through. At this point, if nothing else is changed, if the alpha value is sent to zero (fades out opacity) we find that instead of blending into the background `SubViewport`, particles intended to fade out instead fade to black:
 
-{{< todo text="Show fade to black" >}}
+{{< 
+  pixel_video 
+  src="/mp4/pixel_perfect/bad_opacity.mp4" 
+  w="512"
+  h="448"
+  scale="one"
+  caption="By default, Godot will use the Mix blend mode. When you have a viewport with a transparent background this then causes a fade to black instead of a blending into the viewport below"
+>}}
+
 
 The fix for this is to change the blend mode of the rendering of the `ShadowSubViewport`, which we can do easily in Godot by changing the `blend_mode` of the `ShadowSubViewportContainer` to `BLEND_MODE_PREMULT_ALPHA`. 
-
-{{< todo text="Show the setting within the inspector" >}}
 
 This allows all the alpha values to be rendered correctly between the two `SubViewports`... or at least it should. When we implemented this the particles looked exactly the same!
 
 After some digging around, we found that the viewport alpha blending was being modified due to the presence of the `WorldEnvironment` node using `CANVAS` mode in the main game.
 
-{{< todo text="Show with and without the `WorldEnvironment`" >}}
-
 We filed a [GitHub issue](https://github.com/godotengine/godot/issues/120135) about this, but it's not obviously a bug.
 
-Luckily, the fix is simple, you can set one last setting in the shadow viewport: `own_world_3d = true`. This stops the `WorldEnvironment` from the game `SubViewport` interacting with the shadow `SubViewport` and the alpha blending remains in the `premultiply` setting
-
-{{< todo text="Show it working as intended" >}}
+Luckily, the fix is simple, you can set one last setting in the shadow viewport: `own_world_3d = true`. This stops the `WorldEnvironment` from the game `SubViewport` interacting with the shadow `SubViewport` and the alpha blending remains in the `premultiply` setting.
 
 ## Current Solution
 
@@ -157,6 +180,4 @@ World (Node2D)
 ```
 
 As we keep making the game, I'm sure this will get more complex (or less complex if we learn how to use Godot better!) but for now we're really happy with how everything is looking!
-
-{{< todo text="Include a final picture" >}}
 

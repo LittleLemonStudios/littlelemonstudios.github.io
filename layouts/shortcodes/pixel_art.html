@@ -3,11 +3,11 @@
 {{- if not $img -}}
 {{- $img = resources.Get $src -}}
 {{- end -}}
-
+{{- $w := .Get "w" -}}
 <figure class='fig pixel-art'>
   <img class='scale-{{ .Get "scale" | default "one" }}'
-    src='{{ with $img }}{{ .RelPermalink }}{{ else }}{{ $src }}{{ end }}' alt='{{ .Get "alt" }}' {{ with $img
-    }}style='--w: {{ .Width }}px;' {{ end }}>
+    src='{{ with $img }}{{ .RelPermalink }}{{ else }}{{ $src }}{{ end }}' alt='{{ .Get "alt" }}'
+    style='{{ if $w }}--w: {{ $w }}px;{{ else if $img }}--w: {{ $img.Width }}px;{{ end }}'>
   {{ with .Get "caption" }}
   <figcaption>{{ . }}</figcaption>
   {{ end }}

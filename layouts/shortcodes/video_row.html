@@ -1,0 +1,28 @@
+{{- $src1 := .Get "src1" -}}
+{{- $src2 := .Get "src2" -}}
+{{- $src3 := .Get "src3" -}}
+<figure class="video-row">
+    <div class="video-row-videos">
+        <div class="video-row-item">
+            <video autoplay muted loop playsinline>
+                <source src="{{ $src1 }}" type="video/mp4">
+            </video>
+            {{ with .Get "label1" }}<span class="video-row-label">{{ . }}</span>{{ end }}
+        </div>
+        <div class="video-row-item">
+            <video autoplay muted loop playsinline>
+                <source src="{{ $src2 }}" type="video/mp4">
+            </video>
+            {{ with .Get "label2" }}<span class="video-row-label">{{ . }}</span>{{ end }}
+        </div>
+        <div class="video-row-item">
+            <video autoplay muted loop playsinline>
+                <source src="{{ $src3 }}" type="video/mp4">
+            </video>
+            {{ with .Get "label3" }}<span class="video-row-label">{{ . }}</span>{{ end }}
+        </div>
+    </div>
+    {{ with .Get "caption" }}
+    <figcaption>{{ . }}</figcaption>
+    {{ end }}
+</figure>
