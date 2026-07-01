@@ -15,11 +15,11 @@ draft = false
   scale="two"
 >}}
 
-Inspired by the games of our childhoods, Moss King is a tricky platforming game with beautiful pixel art created by our artist **Spooooky**. But unlike Super Mario World, the game itself is being built and rendered by Godot, an open source game engine which was designed to handle the complex graphics of modern games, and so getting the retro look out the box requires a little work.
+Inspired by the games of our childhoods, Moss King is a tricky platforming game with low-resolution, beautiful pixel art created by our artist Spooooky. But unlike Super Mario World or Yoshi's Island, the game itself is being built and rendered by Godot, an open source game engine which was designed to handle the complex graphics of modern games. Ensuring Moss King captures how we remember these retro games, with all the expected modern touches, requires a little work.
 
-I started to learn game design in Godot about a year ago during a month long "personal game jam" which resulted in the small platforming game [Blink](https://supersingular.itch.io/blink), which achieved pixel perfect graphics in a simple way: the whole game was built at low resolution and then up-scaled to the window size. This had a lot of benefits, namely being easy to implement which was a big deal as I started off knowing nothing about Godot. The downside was that I was stuck at the same resolution for everything in the game, which meant pixel fonts and UI.
+I started to learn game design about a year ago during a month long "personal game jam" which resulted in the small platforming game [Blink](https://supersingular.itch.io/blink). In Blink, I achieved pixel perfect graphics in a simple way: the whole game was built at low resolution and then up-scaled to the window size. This had a lot of benefits, mainly being quick and easy to implement, but this choice also came with a set of limitations. The main downside was that I was stuck at the same resolution for everything in the game, which meant pixel fonts and simple, blocky UI.
 
-For Moss King, the team has decided to hold onto this nostalgic look for the game, but we want to try and do the extra work at the rendering level so that we can use HD textures for things such as UI elements and fonts. This is "common" with modern pixel art games, like Celeste, where you can make UI comfy to interact with while allowing the main game to look and feel like the games we remember from being kids.
+For Moss King, the team has decided to hold onto this nostalgic look for the game, but we want to try and do extra work at the rendering level so that we can use HD textures for things such as UI elements and fonts. This is "common" with modern pixel art games, like Celeste, where you can make UI comfy to interact with while allowing the main game to look and feel like the games we remember from being kids.
 
 There's a lot within Godot which makes this easy, and while we've had some hiccups along the way, progress is good. We may not be using the best solution, but this is what we're working with. As we've had to make some workarounds along the way, we thought we'd write a small blog about the design choices we've made so far.
 
@@ -41,9 +41,9 @@ World (Node2D)
 
 ## Faking Pixel Perfect Alignment
 
-Run like this, there's a visual issue. Although the pixels are now bigger and crisp, the player's location in space is a float value which isn't locked visually to these large scaled pixels. As a result, when moving through the world, the character or any other moving object, can move freely across pixels boundaries, stopping mid-pixel and breaking the illusion that you're playing a game from 30 years ago on outdated hardware. 
+Run like this, there's a visual issue. Although the pixels are now bigger and crisp, the player's location in space is a float value which isn't locked visually to these large scaled pixels. As a result, when moving through the world the character (or any other moving object), can move freely across pixels boundaries, stopping mid-pixel and breaking the illusion that you're playing a game from 30 years ago on outdated hardware. 
 
-Luckily, there's a simple fix for this. There's a value: `snap_2d_transforms_to_pixel`, which we can set to `true` in code (or by clicking a checkbox in the inspector) which fixes this at the rendering level. This allows the player to still exist at subpixels locations, but at render time everything is snapped to the grid allowing movement to feel smooth while looking discrete.
+Luckily, there's a simple fix for this. There's a value: `snap_2d_transforms_to_pixel`, which we can set to `true` in code (or by clicking a checkbox in the inspector) which fixes this at the rendering level. This allows the player to still exist at subpixel locations, but at render time everything is snapped to the grid allowing movement to feel smooth while looking discrete.
 
 This set-up got us most of the way there and is how we have been developing the game over the past few months.
 
@@ -63,7 +63,7 @@ This is, we think, where we found our first Godot bug, which is being tracked in
 
 The problem arises when we attach a `GPUParticle2D` node to the player and emit particles as the player moves through the game. These particles are really useful for adding a little flair or "juice" to movements, from simple dust animations when you land to complex particles we emit when you successfully complete some complex jump. 
 
-I don't fully appreciate the bug (otherwise I would have tried making a pull request to fix it directly) but the rough issue seems to come down to async behaviour between how GPU particles move and how the CPU applies the pixel snapping. We find that the particles are moving correctly providing the parent stands still, but as soon as the player (or any node as a parent) changes position, the particle's screen position get snapped to the pixel grid *after* they are rendered with sub-pixel movement. As a result, particles seem to jitter into and out of pixel alignment causing this jitter effect:
+I don't fully understand the bug (otherwise I would have tried making a pull request to fix it directly) but the rough issue seems to come down to async behaviour between how GPU particles move and how the CPU applies the pixel snapping. We find that the particles are moving correctly providing the parent stands still, but as soon as the player (or any node as a parent) changes position, the particle's screen position get snapped to the pixel grid *after* they are rendered with sub-pixel movement. As a result, particles seem to jitter into and out of pixel alignment causing this jitter effect:
 
 {{< 
   pixel_video 
@@ -88,9 +88,9 @@ WorldCanvas (CanvasLayer)
         └── Shadow (Node2D)
 ```
 
-For us, we wanted to also keep all the pixel logic unchanged, with the idea that if this bug gets patched we can revert this work around with the minimal changes to the game logic.
+For us, we wanted to also keep all the pixel logic unchanged, with the idea that if this bug gets patched in the future, we can revert the work around with minimal changes.
 
-To sync everything up, the `Shadow` node (just a simple `Node2D`) has the following code which clamps its position to the player while shifting the viewport it lives within to ensure that both the viewport of the main and shadow regions match up.
+To sync everything up, the `Shadow` node (just a simple `Node2D`) has the following code. The idea is the node clamps its position to the player while also shifting the viewport it lives within. This ensures that both the viewport of the game and shadow regions align.
 
 ```gdscript
 func _physics_process(_delta: float) -> void:
@@ -104,7 +104,7 @@ func _physics_process(_delta: float) -> void:
 
 {{< comment text="If (when?) there were multiple nodes moving and emitting particles, then this system would need to be generalised. The player would create a `Shadow` node at `_ready()` which would get added to the shadow subviewport. Then, it would be better to move the viewport movement logic out of the `Shadow` into the `ShadowSubViewport` itself. The current fix was the minimal change needed to get the particles on the player to behave nicely, but I expect it to change over time." >}}
 
-Now with the `Shadow` moving with the player, we now want to remove all particles from the `Player` and move them to the `Shadow` where they can't jitter. We can pass them by reference at runtime which allows all the particle code (e.g. setting particles to emit) within the `player.gd` script providing we move everything out in the following way:
+Now with the `Shadow` moving with the player, we want to remove all `GPUParticle2D` nodes from the `Player` and re-parent them to the `Shadow` node, where they will no longer jitter. We can pass them by reference at runtime which has the benefit that all particle code (e.g. starting emission) can remain within the `player.gd` script.
 
 
 ```gdscript

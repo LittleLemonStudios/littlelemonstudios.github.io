@@ -17,9 +17,9 @@ draft = false
 
 Carps and I first met by playing each other's Mario Maker 2 levels. Back then, we would create a new level and using the Switch's inbuilt video capture, record ourselves finishing our own levels. We could then show work in progress by sharing a few clips.
 
-The whole workflow was really easy, the switch would remember the last 30 seconds of gameplay, and so as long as each section broke down easily enough, you could stich the three sections of a usual level in three 30 second chunks. [Here's an example](https://www.reddit.com/r/MarioMaker/s/ZeL2yvLMFb), hosted on Reddit.
+The whole workflow was really easy: the Switch would remember the last 30 seconds of gameplay, and so as long as each section broke down easily enough, you could stich the three sections of a usual level in three 30 second chunks. [Here's an example](https://www.reddit.com/r/MarioMaker/s/ZeL2yvLMFb), hosted on Reddit.
 
-I really like this retroactive way of capturing gameplay. Sometimes when you play something unexpected can happen. Being able to extract the past, rather than preemptively asking the game to record before the cool thing happens, allows you to capture the moments you'd otherwise miss. This is especially true when you're making a game and you want to save evidence of some hard to replicate bug.
+I really like this retroactive way of capturing gameplay. Sometimes when you play, something unexpected can happen. Being able to extract the past, rather than preemptively asking the game to record before the cool thing happens, allows you to capture the moments you'd otherwise miss. This is especially true when you're making a game and you want to save evidence of some hard to replicate bug.
 
 Now, on the Switch, I imagine Nintendo have done some very clever tricks at the hardware level to parallelise the storage of the clip frames without introducing any lag into the gameplay. This blog post is our attempt to get a similar level of functionality within Godot.
 
@@ -29,11 +29,11 @@ Before we talk about the Godot internals, let's sketch out roughly what we want 
 
 {{< comment text="A GIF is a series of images separated by some delay. The delay is encoded in 100ths of seconds, so it's good to pick a FPS which evenly divides 100." >}}
 
-What this ultimately means is that if we want to remember the last `n` seconds of gameplay, we'll need to store `25*n` frames in memory and continuously remove the oldest frames when adding the latest frame. We need the capturing and storing of this data to be fast enough that we can reasonably perform the action every 40ms, without introducing too much lag.
+What this ultimately means is that if we want to remember the last `n` seconds of gameplay, we'll need to store `25*n` frames in memory and continuously remove the oldest frames when adding the latest frame. We need the capturing and storing of this data to be fast enough that we can reasonably perform the action every 40ms (40 = 1000ms / 25 frames), without introducing too much lag.
 
 Then, we need to handle how the frame data is saved as a file. We expect the player to press a button to prompt the save. At this point, all of the viewport frame data needs to be processed to turn into a video. This ultimately means encoding every frame in some image format which is then compressed into some video format (such as mp4) or a GIF.
 
-Continuously capturing frame data and creating a video from this data are essentially two completely independent pieces of work, but they need to be aware of each other. In particular, we expect the creation of the video to be computationally heavy so we want to make a worker thread thread to do the work in parallel to the game. This means ensuring we can package the frame data in a thread safe manner.
+Continuously capturing frame data and creating a video from this data are essentially two completely independent pieces of work, but they need to be aware of each other. As we expect the creation of the video to be computationally heavy, we want to spawn a worker thread thread to do the work in parallel to the game. This means ensuring we can package the frame data in a thread safe manner.
 
 {{< comment text="Another option not explored in this post at all would be to capture game input and then play back all these inputs when the user asks to save the clip. This would have to pause gameplay but probably not introduce any lag during the gameplay before the clip." >}}
 
@@ -98,7 +98,7 @@ func register_viewport(viewport: SubViewport) -> void:
 
 by calling `ScreenRecorder.register_viewport(self)` within the script of `RecordingSubViewport`. For gameplay, this viewport is useless, so we set the viewport rendering mode to `DISABLED` and then set it to `UPDATE_ONCE` only on the frame we want to capture before turning it off again.
 
-With `target_viewport` now capturing what we want, the easiest solution is to then save to the buffer the image directly: `target_viewport.get_image()`, which returns an `Image` type. The issue with this method is that it introduces latency into the game. This is because the CPU has to wait for the texture from the GPU. If the GPU is busy, the CPU hits a wall and has to wait, causing lag. Later in the blog we talk about some other ideas, but storing the image data itself is what we use and the FPS of the game seem to drop from about 120+ to 80-110 FPS while the recording is active, which is something we can work around for now. 
+With `target_viewport` now capturing what we want, the easiest solution is to then save to the buffer the image directly: `target_viewport.get_image()`, which returns an `Image` type. The issue with this method is that it introduces latency into the game. This is because the CPU has to wait for the texture from the GPU. If the GPU is busy, the CPU hits a wall and has to wait, causing lag. Later in the blog we talk about some other ideas, but storing the image data itself is what we use and the FPS of the game seem to drop from about 120+ to 80-110 FPS while the recording is active, which is something we can work with for now. 
 
 With the small resolution image, because the game is pixel-perfect, we can apply nearest neighbour scaling to the GIF or video at creation to get higher resolution files if needed. For use within this blog we can actually use the scaling within the browser by setting `image-rendering: pixelated;` as a property keeping the file size smaller.
 
@@ -151,7 +151,7 @@ func _on_frame_post_draw() -> void:
 We now have everything we need to create a video or GIF at any given moment. We can hook up a listener for `_input()` which calls `_start_gif_export()` on the player's input (we chose `G` for GIF). The main thing we need to do now is ensure is we can offload all of the work of GIF creation into a parallel CPU thread.
 
 In Godot, we can make the `WorkerThread` thread as easily as `Thread.new()`, 
-then all we have to do is copy all mutable data to ensure the work done is thread safe, in our code it looks like this
+then all we have to do is copy all mutable data to ensure the work done is thread safe. In our script, the code snippet is essentially:
 
 ```gdscript
 func _start_gif_export() -> void:
@@ -165,16 +165,16 @@ func _start_gif_export() -> void:
 	encode_thread.start(_encode_threaded.bind(buffer_copy, index_copy))
 ```
 
-Now the final decision is how to encode the frame data into a GIF, at a high level there's two options:
+Now the final decision is how to encode the frame data into a GIF. At a high level there are two options:
 
 1. Render the GIF within Godot itself by processing the `Image` data.
 2. Save all frame data to disk as a list of PNG files and then use an external binary dependency to process this data into a GIF
 
 ### A GDScript Native Solution?
 
-So option 1 is easier that you would think, thanks to the plugin [godot-gdgifexporter](https://github.com/jegor377/godot-gdgifexporter) which has created a pure gdscript GIF exporter. This is what I went with first, and I managed to make it work, but with some issues which meant the idea was abandoned.
+Option 1 is easier that you would think, thanks to the plugin [godot-gdgifexporter](https://github.com/jegor377/godot-gdgifexporter) which has created a pure gdscript GIF exporter. This is what I went with first, and I managed to make it work, but with some issues which meant the idea was abandoned.
 
-The main issue was that some aspects of the code were in some way not thread safe. Which means that creating the GIF in a `WorkerThread` crashed the game... I then tried running the code on the main thread and it "worked" (I had a GIF)! However, it took more than 10s to create it and the game lagged down to 1 FPS during saving. 
+The main issue was that some aspects of the code were in some way not thread safe. Which means that creating the GIF in a `WorkerThread` crashed the game. I then tried running the code on the main thread and it "worked" (I had a GIF)! However, it took more than 10s to create it and the game lagged down to 1 FPS during saving. 
 
 This method could work better with a bit more work but ultimately I abandoned it in favour for option two. The right thing to do is probably refactor the whole thing to find the thread safety bug.
 
@@ -202,30 +202,30 @@ There were a few different ideas I cycled though:
 2. Can I just use a different set of arguments to `ffmpeg` to get a colour palette which selects for lots of different hues instead of from the most common? I think maybe you can, but I couldn't figure it out from the documentation.
 3. Are all libraries going to behave the same? Maybe I can try something other than `ffmpeg`?
 
-### Creating GIFs with Image Magick
+### Creating GIFs with ImageMagick
 
-So `ffmpeg` may have been one option, but it's certainly not the only one. Another program, [Image Magick](https://imagemagick.org/command-line-options) is something I had used in the past for other image manipulation. As this was a dev tool, I had no issue with asking the others to install the binary to enable this feature. Trying it out, the converted GIF took slightly longer to be made, but the resulting colours worked much better, in both the clips with and without background effects.
+So `ffmpeg` may have been one option, but it's certainly not the only one. Another program, [ImageMagick](https://imagemagick.org/command-line-options) is something I had used in the past for other image manipulation. As this was a dev tool, I had no issue with asking the others to install the binary to enable this feature. Trying it out, the converted GIF took slightly longer to be made, but the resulting colours worked much better, in both the clips with and without background effects.
 
 {{< 
 	pixel_art 
 	src="gif/gif_making/bg_imagemagick.gif" 
 	scale="two" 
-	alt="A GIF made using Image Magick where the generated palette fits our game better due to a different sampling method which catches a wider range of hues" 
-	caption="The Image Magick generated palette fits our game better due to a different sampling method, which catches a wider range of hues and a truer representation of the game" 
+	alt="A GIF made using ImageMagick where the generated palette fits our game better due to a different sampling method which catches a wider range of hues" 
+	caption="The ImageMagick generated palette fits our game better due to a different sampling method, which catches a wider range of hues and a truer representation of the game" 
 >}}
 
 ### Direct Comparison
 
-If you're interested, here's two sliding windows which directly compare frames from each GIF, comparing the same rendered frame from Image Magick and FFMPEG.
+If you're interested, here's two sliding windows which directly compare frames from each GIF, comparing the same rendered frame from ImageMagick and FFMPEG.
 
 {{< 
 	pixel_slider 
     src1="/png/gif_making/bg_ffmpeg_15.png" 
 	src2="/png/gif_making/bg_imagemagick_15.png" 
 	alt1="A cropped gif made using FFMPEG with background effects"
-	alt2="A cropped gif made using Image Magick with background effects" caption="A direct comparison between FFMPEG and Image Magick generated GIFs when background effects are on, leading to a large colour space in the game frame data. The resulting GIF produced by Image Magick handles the player and mushroom colours much better." 
+	alt2="A cropped gif made using ImageMagick with background effects" caption="A direct comparison between FFMPEG and ImageMagick generated GIFs when background effects are on, leading to a large colour space in the game frame data. The resulting GIF produced by ImageMagick handles the player and mushroom colours much better." 
 	scale="two" 
-	label1="Image Magick"
+	label1="ImageMagick"
 	label2="ffmpeg"
 >}}
 
@@ -234,13 +234,13 @@ If you're interested, here's two sliding windows which directly compare frames f
     src1="/png/gif_making/nbg_ffmpeg_84.png" 
 	src2="/png/gif_making/nbg_imagemagick_84.png" 
 	alt1="A cropped gif made using FFMPEG without background effects"
-	alt2="A cropped gif made using Image Magick without background effects" caption="A direct comparison between FFMPEG and Image Magick generated GIFs when background effects are off, reducing the colour space of the frame data. The resulting GIFs are nearly identical." 
+	alt2="A cropped gif made using ImageMagick without background effects" caption="A direct comparison between FFMPEG and ImageMagick generated GIFs when background effects are off, reducing the colour space of the frame data. The resulting GIFs are nearly identical." 
 	scale="two" 
-	label1="Image Magick"
+	label1="ImageMagick"
 	label2="ffmpeg"
 >}}
 
-At this point, I was really happy with the GIFs I was getting from Image Magick and the last step was to plug in the binary call within Godot. This is exceptionally easy with the `OS.execute` command which allows running commands directly from the engine! There's some string formatting to do to ensure the binary arguments are well formatted but the entire function of:
+At this point, I was really happy with the GIFs I was getting from ImageMagick and the last step was to plug in the binary call within Godot. This is exceptionally easy with the `OS.execute` command which allows running commands directly from the engine! There's some string formatting to do to ensure the binary arguments are well formatted but the entire function of:
 
 1. Saving all frames as a PNG
 2. Processing the PNG frames into a GIF
@@ -282,7 +282,7 @@ func _encode_threaded(buffer_copy: Array[Image], index_copy: int) -> void:
 	var output = []
 	var exit = OS.execute(magick_path, magick_call, output, true)
 	if exit != 0:
-		push_error("image magick encode pass failed")
+		push_error("imagemagick encode pass failed")
 	else:
 		print("GIF saved to: ", output_path)
 
@@ -305,7 +305,7 @@ During the writing of this blog, I started also experimenting with recording dir
   caption="An mp4 created using FFMPEG with the same input PNG as the GIFs shown above" 
 >}}
 
-The only downside with th mp4 is that cropping the video after the fact. This has a solution in our script, where you can set parameters to crop the images before the video is made, but this requires manual work and the flexibility of the GIF means we'll probably end up using that more when creating resources for the blog (where as the mp4 is better for sharing bugs / small clips internally as a team).
+The only downside with mp4 is that cropping the video after the fact. This has a solution in our script, where you can set parameters to crop the images before the video is made, but this requires manual work and the flexibility of the GIF means we'll probably end up using that more when creating resources for the blog (where as the mp4 is better for sharing bugs / small clips internally as a team).
 
 The creation of both files in the code after the update to have both options now looks like this:
 
