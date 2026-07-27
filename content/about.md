@@ -3,7 +3,7 @@ title = "About"
 layout = "single"
 +++
 
-Little Lemon Studios was created by three friends: carps, jack and spooooky. We are currently working on our first game **Moss King**.
+Little Lemon Studios was created by three friends: carps, jack and spooooky. We are currently working on two games: **Blink** and **Moss King**.
 
 ## Discord
 
