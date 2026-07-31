@@ -17,7 +17,7 @@ draft = false
 
 Carps and I first met by playing each other's Mario Maker 2 levels. Back then, we would create a new level and using the Switch's inbuilt video capture, record ourselves finishing our own levels. We could then show work in progress by sharing a few clips.
 
-The whole workflow was really easy: the Switch would remember the last 30 seconds of gameplay, and so as long as each section broke down easily enough, you could stich the three sections of a usual level in three 30 second chunks. [Here's an example](https://www.reddit.com/r/MarioMaker/s/ZeL2yvLMFb), hosted on Reddit.
+The whole workflow was really easy: the Switch would remember the last 30 seconds of gameplay, and so as long as each section broke down easily enough, you could stitch the three sections of a usual level in three 30 second chunks. [Here's an example](https://www.reddit.com/r/MarioMaker/s/ZeL2yvLMFb), hosted on Reddit.
 
 I really like this retroactive way of capturing gameplay. Sometimes when you play, something unexpected can happen. Being able to extract the past, rather than preemptively asking the game to record before the cool thing happens, allows you to capture the moments you'd otherwise miss. This is especially true when you're making a game and you want to save evidence of some hard to replicate bug.
 
@@ -33,7 +33,7 @@ What this ultimately means is that if we want to remember the last `n` seconds o
 
 Then, we need to handle how the frame data is saved as a file. We expect the player to press a button to prompt the save. At this point, all of the viewport frame data needs to be processed to turn into a video. This ultimately means encoding every frame in some image format which is then compressed into some video format (such as mp4) or a GIF.
 
-Continuously capturing frame data and creating a video from this data are essentially two completely independent pieces of work, but they need to be aware of each other. As we expect the creation of the video to be computationally heavy, we want to spawn a worker thread thread to do the work in parallel to the game. This means ensuring we can package the frame data in a thread safe manner.
+Continuously capturing frame data and creating a video from this data are essentially two completely independent pieces of work, but they need to be aware of each other. As we expect the creation of the video to be computationally heavy, we want to spawn a worker thread to do the work in parallel to the game. This means ensuring we can package the frame data in a thread safe manner.
 
 {{< comment text="Another option not explored in this post at all would be to capture game input and then play back all these inputs when the user asks to save the clip. This would have to pause gameplay but probably not introduce any lag during the gameplay before the clip." >}}
 
@@ -98,7 +98,7 @@ func register_viewport(viewport: SubViewport) -> void:
 
 by calling `ScreenRecorder.register_viewport(self)` within the script of `RecordingSubViewport`. For gameplay, this viewport is useless, so we set the viewport rendering mode to `DISABLED` and then set it to `UPDATE_ONCE` only on the frame we want to capture before turning it off again.
 
-With `target_viewport` now capturing what we want, the easiest solution is to then save to the buffer the image directly: `target_viewport.get_image()`, which returns an `Image` type. The issue with this method is that it introduces latency into the game. This is because the CPU has to wait for the texture from the GPU. If the GPU is busy, the CPU hits a wall and has to wait, causing lag. Later in the blog we talk about some other ideas, but storing the image data itself is what we use and the FPS of the game seem to drop from about 120+ to 80-110 FPS while the recording is active, which is something we can work with for now. 
+With `target_viewport` now capturing what we want, the easiest solution is to then save to the buffer the image directly: `target_viewport.get_image()`, which returns an `Image` type. The issue with this method is that it introduces latency into the game. This is because the CPU has to wait for the texture from the GPU. If the GPU is busy, the CPU hits a wall and has to wait, causing lag. Later in the blog we talk about some other ideas, but storing the image data itself is what we use and the FPS of the game seems to drop from about 120+ to 80-110 FPS while the recording is active, which is something we can work with for now. 
 
 With the small resolution image, because the game is pixel-perfect, we can apply nearest neighbour scaling to the GIF or video at creation to get higher resolution files if needed. For use within this blog we can actually use the scaling within the browser by setting `image-rendering: pixelated;` as a property keeping the file size smaller.
 
@@ -109,7 +109,7 @@ With a ring buffer in place and a way to save each individual frame, we now need
 
 The rough set up is as follows. We create a constant `TICK_LENGTH` equal to the tick length (0.04s). We then set a timer variable `tick_time` at `_ready()` equal to this value. Within the `_process(delta: float)` method, we decrease `tick_time` and if this value is non-positive, we trigger the code to capture a frame and add `TICK_LENGTH` back to `tick_time`.
 
-However, we need to be careful that we only capture the frame after the GPU has finished drawing. To abstract this, we instead simply update `waiting_for_frame: bool` to be `true` within the `_process()` method. Then by connecting a method to the `frame_post_draw` signal, we can ensure that the frame data is only captures after the full draw.
+However, we need to be careful that we only capture the frame after the GPU has finished drawing. To abstract this, we instead simply update `waiting_for_frame: bool` to be `true` within the `_process()` method. Then by connecting a method to the `frame_post_draw` signal, we can ensure that the frame data is only captured after the full draw.
 
 The work flow of this section then looks roughly like:
 
@@ -148,7 +148,7 @@ func _on_frame_post_draw() -> void:
 
 ## A Clip of the Past
 
-We now have everything we need to create a video or GIF at any given moment. We can hook up a listener for `_input()` which calls `_start_gif_export()` on the player's input (we chose `G` for GIF). The main thing we need to do now is ensure is we can offload all of the work of GIF creation into a parallel CPU thread.
+We now have everything we need to create a video or GIF at any given moment. We can hook up a listener for `_input()` which calls `_start_gif_export()` on the player's input (we chose `G` for GIF). The main thing we need to do now is ensure we can offload all of the work of GIF creation into a parallel CPU thread.
 
 In Godot, we can make the `WorkerThread` thread as easily as `Thread.new()`, 
 then all we have to do is copy all mutable data to ensure the work done is thread safe. In our script, the code snippet is essentially:
@@ -172,17 +172,17 @@ Now the final decision is how to encode the frame data into a GIF. At a high lev
 
 ### A GDScript Native Solution?
 
-Option 1 is easier that you would think, thanks to the plugin [godot-gdgifexporter](https://github.com/jegor377/godot-gdgifexporter) which has created a pure gdscript GIF exporter. This is what I went with first, and I managed to make it work, but with some issues which meant the idea was abandoned.
+Option 1 is easier than you would think, thanks to the plugin [godot-gdgifexporter](https://github.com/jegor377/godot-gdgifexporter) which has created a pure gdscript GIF exporter. This is what I went with first, and I managed to make it work, but with some issues which meant the idea was abandoned.
 
 The main issue was that some aspects of the code were in some way not thread safe. Which means that creating the GIF in a `WorkerThread` crashed the game. I then tried running the code on the main thread and it "worked" (I had a GIF)! However, it took more than 10s to create it and the game lagged down to 1 FPS during saving. 
 
-This method could work better with a bit more work but ultimately I abandoned it in favour for option two. The right thing to do is probably refactor the whole thing to find the thread safety bug.
+This method could work better with a bit more work but ultimately I abandoned it in favour of option two. The right thing to do is probably refactor the whole thing to find the thread safety bug.
 
 ### Creating GIFs with FFMPEG
 
 The second option is to create a GIF using some general purpose tool, such as `ffmpeg`. To experiment with arguments, I took the frame data and dumped it as PNG files. Then, I made a simple script to run `ffmpeg` to first generate a palette (GIFs are forced to use a maximum of 256 colours) and then a second call to make a GIF from the PNG data and the freshly generated palette. The result was the following:
 
-{{< pixel_art src="gif/gif_making/bg_ffmpeg.gif" scale="two" alt="A  GIF made using FFMPEG where the generated palette breaks intended art style" caption="The standard flags for palette creation favour the most popular colours in the frame data, which accuratly captures the background well but corrupts the rendering of the player and other small intractable objects such as the mushroom seen on the left" >}}
+{{< pixel_art src="gif/gif_making/bg_ffmpeg.gif" scale="two" alt="A GIF made using FFMPEG where the generated palette breaks intended art style" caption="The standard flags for palette creation favour the most popular colours in the frame data, which accurately captures the background well but corrupts the rendering of the player and other small interactable objects such as the mushroom seen on the left" >}}
 
 Now the first option I tried was to try and remove a bunch of the effects we have in post rendering to keep the total palette of the level down to 256 colors. In this case, it seemed to work:
 
@@ -305,7 +305,7 @@ During the writing of this blog, I started also experimenting with recording dir
   caption="An mp4 created using FFMPEG with the same input PNG as the GIFs shown above" 
 >}}
 
-The only downside with mp4 is that cropping the video after the fact. This has a solution in our script, where you can set parameters to crop the images before the video is made, but this requires manual work and the flexibility of the GIF means we'll probably end up using that more when creating resources for the blog (where as the mp4 is better for sharing bugs / small clips internally as a team).
+The only downside with mp4 is that we cannot crop the video after the fact. This has a solution in our script, where you can set parameters to crop the images before the video is made, but this requires manual work and the flexibility of the GIF means we'll probably end up using that more when creating resources for the blog (where as the mp4 is better for sharing bugs / small clips internally as a team).
 
 The creation of both files in the code after the update to have both options now looks like this:
 
@@ -393,9 +393,9 @@ Which shows and updates the label, and optionally auto-hides the label after a w
 
 I'm still not totally happy with the solution, in particular, I feel as though there must be an async way to obtain the texture data from the GPU without stalling the CPU during the frame capture. I would love to add to the buffer the texture `RID` or some other lighter data structure which I could then create an image from using the worker thread instead of the main game thread.
 
-This is something I am unexperienced with and potentially the solution is "easy" when you know what you're doing.
+This is something I am inexperienced with and potentially the solution is "easy" when you know what you're doing.
 
-The problem seems to be in how we could offload the request from the GPU into memory from a worker thread instead of a main thread. As far as I can tell from the documentation, `RenderingSever` can directly request texture data from the `RID` of the texture, but that this work has to be done on the main thread?
+The problem seems to be in how we could offload the request from the GPU into memory from a worker thread instead of a main thread. As far as I can tell from the documentation, `RenderingServer` can directly request texture data from the `RID` of the texture, but that this work has to be done on the main thread?
 
 Alternatively, there is the `RenderingDevice` but this requires building the game in Forward+ rather than Compatibility mode and I'm not sure we want to go down this route. The `RenderingDevice` does include an async call to the `texture_get_data_async(texture: RID, layer: int, callback: Callable)`, but this hasn't been properly explored yet.
 

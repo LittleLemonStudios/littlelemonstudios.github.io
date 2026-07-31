@@ -47,18 +47,18 @@ This obviously looks wrong and feels terrible for the player, so we need to fix 
 
 ## Some Rejected Ideas
 
-Before sharing our solution here's a couple of other ideas which we didn't follow:
+Before sharing our solution, here's a couple of other ideas which we didn't follow:
 
 1. Always cover the edge of the one-way. This would work, but was far too limiting for the level design we want to do.
 2. Never allow a player to jump to this "bad" height by placing all platforms in the right place. This could work, but because of the way we can platform off the magic pollen, there's too much variance with "how high" we can jump.
-3. Remove the use of `move_and_slide()` and instead check all collisions within `move_and_collide()` skipping collisions with one-way platforms when we're at the wrong height. This could work, but we really wanted to try and use as much of Godot as possible and this kind of hack on something as core as layer movement felt like the wrong choice.
+3. Remove the use of `move_and_slide()` and instead check all collisions within `move_and_collide()` skipping collisions with one-way platforms when we're at the wrong height. This could work, but we really wanted to try and use as much of Godot as possible and this kind of hack on something as core as player movement felt like the wrong choice.
 4. Change the player's collision to use separation rays instead and try and fix it this way. This option is something we almost did, but so much of what we have coded is centred around the rectangle shape (including ground pounds smashing blocks), we were loath to change something this fundamental to the player.
 
 ## Our Solution
 
-Instead of editing the player, we have complicated the one-way platform instead. We have defined a new `StaticBody2D` which uses a `SegmentLine2D` for the collision shape, which has one-way collision enabled. We hoped the segment line would be enough, but the bug remained for exactly the  same reason: the player collides with the line half way through the rectangle and gets caught.
+Instead of editing the player, we have complicated the one-way platform instead. We have defined a new `StaticBody2D` which uses a `SegmentShape2D` for the collision shape, which has one-way collision enabled. We hoped the segment line would be enough, but the bug remained for exactly the same reason: the player collides with the line halfway through the rectangle and gets caught.
 
-We then add to the new one-way platform an area which is larger than the platform. This `Area2D` listens for the `Player` node. When a player enters the `Area2D` the platform stores the node reference in the `player` variable which is later set to `null` on the exit body signal.
+We then add to the new one-way platform an area which is larger than the platform. This `Area2D` listens for the `Player` node. When a player enters the `Area2D`, the platform stores the node reference in the `player` variable which is later set to `null` on the exit body signal.
 
 ```asm
 OneWayShape2D
@@ -67,7 +67,7 @@ OneWayShape2D
 └── CollisionShape2D
 ```
 
-When `player` is not `null`, then the `Area2D` controls the collision of the `SegmentLine2D` within the physics process. When the player's location is below the platform, the collision of the `SegmentLine2D` is disabled, and when the player is above the line it's enabled. This means when the player tries to collide with the side of the line, the `Area2D` catches this, turns off collision and the player passes straight through. Then, if the player jumps on it regularly, the position ensures the collision is enabled and the platform works.
+When `player` is not `null`, then the `Area2D` controls the collision of the `SegmentShape2D` within the physics process. When the player's location is below the platform, the collision of the `SegmentShape2D` is disabled, and when the player is above the line it's enabled. This means when the player tries to collide with the side of the line, the `Area2D` catches this, turns off collision and the player passes straight through. Then, if the player jumps on it regularly, the position ensures the collision is enabled and the platform works.
 
 ```gdscript
 class_name GenericOneWay
@@ -96,7 +96,7 @@ func _physics_process(_delta: float) -> void:
     collision_shape_2d.disabled = diff > 0.0
 ```
 
-Ultimately, this is similar to replacing the player's collision shape with a `SegmentLine2D` too, but without sacrificing that we can "bump" into walls with our rectangle as you would expect for a solid player character. 
+Ultimately, this is similar to replacing the player's collision shape with a `SegmentShape2D` too, but without sacrificing that we can "bump" into walls with our rectangle as you would expect for a solid player character. 
 
 {{< 
   pixel_art 
@@ -139,7 +139,7 @@ As a result, we can paint our scene with one-way tiles from the tilemap and inst
 
 {{< comment text="There's an optimisation to explore here. Currently if there are n tiles placed which are labeled as 'one-way' then we created n generic one-way platforms and add them all to the scene. One could imagine instead looking for lines of one-way tiles and adding longer sprites (so 5 adjacent tiles need only one StaticBody2D). However, to do this you would need to dynamically set the collision shape of each one to the correct length and so you may end up with more complex scenes as instead of a single node passed many times as reference you need many different collision shapes created instead. Something to think about." >}}
 
-## Some Extra Leniency  
+## Some Extra Leniency
 
 Now we have custom code for all our one-ways which avoid the side collision, we can write more code on top of that. Why not?!
 

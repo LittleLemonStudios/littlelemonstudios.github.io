@@ -41,7 +41,7 @@ World (Node2D)
 
 ## Faking Pixel Perfect Alignment
 
-Run like this, there's a visual issue. Although the pixels are now bigger and crisp, the player's location in space is a float value which isn't locked visually to these large scaled pixels. As a result, when moving through the world the character (or any other moving object), can move freely across pixels boundaries, stopping mid-pixel and breaking the illusion that you're playing a game from 30 years ago on outdated hardware. 
+Run like this, there's a visual issue. Although the pixels are now bigger and crisp, the player's location in space is a float value which isn't locked visually to these large scale pixels. As a result, when moving through the world the character (or any other moving object), can move freely across pixel boundaries, stopping mid-pixel and breaking the illusion that you're playing a game from 30 years ago on outdated hardware. 
 
 Luckily, there's a simple fix for this. There's a value: `snap_2d_transforms_to_pixel`, which we can set to `true` in code (or by clicking a checkbox in the inspector) which fixes this at the rendering level. This allows the player to still exist at subpixel locations, but at render time everything is snapped to the grid allowing movement to feel smooth while looking discrete.
 
@@ -54,16 +54,16 @@ This set-up got us most of the way there and is how we have been developing the 
   label2="Nearest texture filter"
   src3="/mp4/pixel_perfect/snapping.mp4"
   label3="Transform snapping enabled"
-  caption="How sub-pixel movement renders for different configurations. We see using the nearest texture filter for rendering almost fixes the appearance but causes smearing at the feet. However, by snapping the transforms themselves we are protected against and visual bugs"
+  caption="How sub-pixel movement renders for different configurations. We see using the nearest texture filter for rendering almost fixes the appearance but causes smearing at the feet. However, by snapping the transforms themselves we are protected against any visual bugs"
 >}}
 
 ## Jittering GPU Particles
 
-This is, we think, where we found our first Godot bug, which is being tracked in the following [GitHub Issue](https://github.com/godotengine/godot/issues/120029).
+We think this is where we found our first Godot bug, which is being tracked in the following [GitHub Issue](https://github.com/godotengine/godot/issues/120029).
 
 The problem arises when we attach a `GPUParticle2D` node to the player and emit particles as the player moves through the game. These particles are really useful for adding a little flair or "juice" to movements, from simple dust animations when you land to complex particles we emit when you successfully complete some complex jump. 
 
-I don't fully understand the bug (otherwise I would have tried making a pull request to fix it directly) but the rough issue seems to come down to async behaviour between how GPU particles move and how the CPU applies the pixel snapping. We find that the particles are moving correctly providing the parent stands still, but as soon as the player (or any node as a parent) changes position, the particle's screen position get snapped to the pixel grid *after* they are rendered with sub-pixel movement. As a result, particles seem to jitter into and out of pixel alignment causing this jitter effect:
+I don't fully understand the bug (otherwise I would have tried making a pull request to fix it directly) but the rough issue seems to come down to async behaviour between how GPU particles move and how the CPU applies the pixel snapping. We find that the particles are moving correctly providing the parent stands still, but as soon as the player (or any node as a parent) changes position, the particle's screen position gets snapped to the pixel grid *after* they are rendered with sub-pixel movement. As a result, particles seem to jitter into and out of pixel alignment causing this jitter effect:
 
 {{< 
   pixel_video 
@@ -108,7 +108,7 @@ Now with the `Shadow` moving with the player, we want to remove all `GPUParticle
 
 
 ```gdscript
-func _ready() -> void
+func _ready() -> void:
     ...
     _send_particles_to_shadow()
 
@@ -118,7 +118,7 @@ func _send_particles_to_shadow() -> void:
         if child is GPUParticles2D:
             child.queue_free()
 
-    # Move all GPUParticle2D nodes to the player
+    # Move all GPUParticle2D nodes to the shadow
     for child in particles.get_children():
         if not child is GPUParticles2D:
             continue
@@ -158,7 +158,7 @@ This allows all the alpha values to be rendered correctly between the two `SubVi
 
 After some digging around, we found that the viewport alpha blending was being modified due to the presence of the `WorldEnvironment` node using `CANVAS` mode in the main game.
 
-We filed a [GitHub issue](https://github.com/godotengine/godot/issues/120135) about this, but it's not obviously a bug.
+We filed a [GitHub issue](https://github.com/godotengine/godot/issues/120135) about this, but according to the developers, it is not obviously a bug.
 
 Luckily, the fix is simple, you can set one last setting in the shadow viewport: `own_world_3d = true`. This stops the `WorldEnvironment` from the game `SubViewport` interacting with the shadow `SubViewport` and the alpha blending remains in the `premultiply` setting.
 
@@ -168,7 +168,7 @@ Putting this all together, we have the following structure to our `World` node:
 
 ```asm
 World (Node2D)
- ├── WorldCanvas (CanvasLayer)
+├── WorldCanvas (CanvasLayer)
     ├── SubViewportContainer  [stretch = true, stretch_shrink = 4]
     │   └── SubViewport  [size = 480×270, snap_2d_transforms_to_pixel = true]
     │       └── [game world]
