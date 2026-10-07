@@ -4,16 +4,21 @@
 
 
 :root {
-  --color-bg: #fffdf6;
+  --color-bg: #fafafa;
   --color-text: #2a2118;
   --color-header: #197b58;
   --color-link: #e08a25;
   --color-text-muted: #8a8478;
-  --tag-color: #ee5d64;
+  --tag-bg: #fbe8c4;
+  --tag-text: #a85d1c;
   --inline-code-bg: #e6eee3;
   --inline-code-text: #197b58;
   --pomu-gold: #eec648;
   --pomu-gold-dark: #e08a25;
+  --header-bg: #125032;
+  --header-title: #ffdf70;
+  --header-text: #fffbe3;
+  --logo-green: #125032;
 }
 
 *,
@@ -46,8 +51,9 @@ a {
   min-height: calc(100vh - 150px);
 }
 
-header {
-  padding: 20px;
+body>header {
+  background: var(--header-bg);
+  margin-bottom: 2rem;
 }
 
 .topTitle {
@@ -84,13 +90,36 @@ article strong {
 
 /* main page */
 
+.home-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2.5rem;
+  margin: 2.5rem 0 3.5rem;
+}
+
+.home-logo {
+  flex: 0 0 auto;
+  width: 220px;
+  height: auto;
+}
+
 .home-intro {
-  margin-bottom: 3rem;
-  padding-bottom: 2rem;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-  color: var(--color-text-muted);
-  font-size: 0.9375rem;
-  line-height: 1.7;
+  color: var(--logo-green);
+  font-size: 1.25rem;
+  line-height: 1.6;
+}
+
+@media (max-width: 600px) {
+  .home-hero {
+    flex-direction: column;
+    gap: 1.25rem;
+    text-align: center;
+  }
+
+  .home-logo {
+    width: 180px;
+  }
 }
 
 .post-header {
@@ -728,8 +757,9 @@ figure figcaption {
 
 .tag a {
   display: inline-block;
-  background: var(--tag-color);
-  color: var(--color-bg);
+  background: var(--tag-bg);
+  color: var(--tag-text);
+  font-weight: 600;
   font-size: 0.75rem;
   padding: 0.2em 0.65em;
   border-radius: 999px;

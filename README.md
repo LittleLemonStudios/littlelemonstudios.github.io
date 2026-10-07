@@ -1,6 +1,6 @@
 # Little Lemon Studios
 
-A dev blog for the game, built with [Hugo](https://gohugo.io).
+A dev blog for little lemon studios, built with [Hugo](https://gohugo.io).
 
 ---
 

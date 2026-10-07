@@ -1,6 +1,9 @@
 <header class="site-header">
   <div class="header-inner">
-    <a href="{{ "/" | relURL }}" class="site-title">{{ site.Title }}</a>
+    <a href="{{ "/" | relURL }}" class="site-title">
+      <img class="site-logo" src="{{ "LL_Logo_two_color.png" | relURL }}" alt="">
+      {{ site.Title }}
+    </a>
 
     <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
       <span></span>

@@ -1,10 +1,13 @@
 {{ define "main" }}
 
-{{ with .Content }}
-<div class="home-intro">
-  {{ . }}
+<div class="home-hero">
+  {{ with .Content }}
+  <div class="home-intro">
+    {{ . }}
+  </div>
+  {{ end }}
+  <img class="home-logo" src="{{ "LL_Logo.png" | relURL }}" alt="Little Lemon Studios logo">
 </div>
-{{ end }}
 
 <h2 class="post-list-header">Blog Posts</h2>
 

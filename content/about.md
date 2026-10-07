@@ -7,4 +7,4 @@ Little Lemon Studios was created by three friends: carps, jack and spooooky. We 
 
 ## Discord
 
-Come join our [Discord community](https://todo.com) to get playtesting access and hang out with the little lemon team.
+Come join our [Discord community](https://todo.com) to get play-testing access and hang out with the little lemon team.

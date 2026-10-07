@@ -1,7 +1,5 @@
 .site-header {
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-  margin-bottom: 1rem;
-  padding: 1.25rem 0;
+  padding: 0.5rem 0;
 }
 
 .header-inner {
@@ -19,7 +17,15 @@
   font-weight: 700;
   font-size: 1.2rem;
   text-decoration: none;
-  color: var(--color-header);
+  color: var(--header-title);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.site-logo {
+  width: 56px;
+  height: 56px;
 }
 
 .site-nav {
@@ -30,11 +36,13 @@
 .site-nav a {
   font-size: 0.975rem;
   text-decoration: none;
-  color: var(--color-text-muted);
+  color: var(--header-text);
+  opacity: 0.85;
 }
 
 .site-nav a:hover {
-  color: var(--color-link);
+  color: var(--header-title);
+  opacity: 1;
 }
 
 .nav-toggle {
@@ -51,7 +59,7 @@
   display: block;
   width: 22px;
   height: 1.5px;
-  background: var(--color-text);
+  background: var(--header-text);
   transition: opacity 0.2s ease;
 }
 
@@ -65,8 +73,8 @@
     width: 100%;
     flex-direction: column;
     gap: 0;
-    border-top: 1px solid rgba(0, 0, 0, 0.08);
-    padding-top: 0.75rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    padding: 0.5rem 0;
   }
 
   .site-nav.is-open {
