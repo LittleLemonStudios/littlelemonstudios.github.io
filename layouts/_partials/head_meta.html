@@ -7,7 +7,7 @@
 {{- if .IsHome -}}
 {{- $title = "Little Lemon Studios" -}}
 {{- $description = "A devlog following the development of Moss King, an indie platformer built in Godot." -}}
-{{- $image = absURL "/pomu.png" -}}
+{{- $image = absURL "/LL_logo.png" -}}
 
 {{/* Blog posts */}}
 {{- else if .IsPage -}}
@@ -16,7 +16,7 @@
 {{- with .Resources.GetMatch "*.png" -}}
 {{- $image = .Permalink -}}
 {{- else -}}
-{{- $image = absURL "/pomu.png" -}}
+{{- $image = absURL "/LL_logo.png" -}}
 {{- end -}}
 {{- end -}}
 
